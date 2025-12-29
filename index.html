@@ -81,13 +81,31 @@
                     <i data-lucide="file-stack" class="w-8 h-8 text-brand-600"></i>
                     <span class="font-bold text-xl text-slate-800">PDF Master</span>
                 </div>
-                <!-- Navigation -->
+                
+                <!-- Desktop Navigation -->
                 <div class="hidden md:flex space-x-1">
                     <button onclick="switchTab('merge')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="merge">Merge</button>
                     <button onclick="switchTab('split')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="split">Split/Remove</button>
                     <button onclick="switchTab('create')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="create">Create PDF</button>
                     <button onclick="switchTab('convert')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="convert">Convert PDF</button>
                 </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="flex md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-slate-600 hover:text-brand-600 p-2 focus:outline-none">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-200 shadow-lg absolute w-full left-0 z-40">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                 <button onclick="switchTab('merge')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="merge">Merge</button>
+                 <button onclick="switchTab('split')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="split">Split/Remove</button>
+                 <button onclick="switchTab('create')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="create">Create PDF</button>
+                 <button onclick="switchTab('convert')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="convert">Convert PDF</button>
             </div>
         </div>
     </nav>
@@ -371,19 +389,30 @@
         });
 
         // --- NAVIGATION ---
+        function toggleMobileMenu() {
+            const menu = document.getElementById('mobile-menu');
+            menu.classList.toggle('hidden');
+        }
+
         function switchTab(tabId) {
             document.querySelectorAll('.tool-section').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.nav-btn').forEach(el => {
+            
+            // Update both desktop and mobile buttons
+            document.querySelectorAll('.nav-btn, .nav-btn-mobile').forEach(el => {
                 el.classList.remove('text-brand-600', 'bg-brand-50');
                 el.classList.add('text-slate-600');
             });
             
             document.getElementById(`tool-${tabId}`).classList.remove('hidden');
-            const btn = document.querySelector(`button[data-tab="${tabId}"]`);
-            if(btn) {
+            
+            // Highlight active tab
+            document.querySelectorAll(`button[data-tab="${tabId}"]`).forEach(btn => {
                 btn.classList.add('text-brand-600', 'bg-brand-50');
                 btn.classList.remove('text-slate-600');
-            }
+            });
+            
+            // Close mobile menu if open
+            document.getElementById('mobile-menu').classList.add('hidden');
             
             // Clean Status
             hideStatus();
