@@ -164,12 +164,28 @@
                     <div class="w-full lg:w-80 flex-shrink-0">
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24 space-y-6">
                             
+                            <!-- Select Range -->
+                            <div>
+                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
+                                    <i data-lucide="list-checks" class="w-4 h-4 text-slate-600"></i> Select by Range
+                                </h4>
+                                <div class="flex gap-2">
+                                    <input type="text" id="page-range-input" placeholder="e.g. 1, 3-5, 8" class="w-full min-w-0 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" onkeydown="if(event.key==='Enter') applyPageRangeSelection()">
+                                </div>
+                                <button onclick="applyPageRangeSelection()" class="mt-2 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium border border-slate-300 transition-colors">
+                                    Apply Selection
+                                </button>
+                                <p class="text-xs text-slate-400 mt-2">Enter page numbers to select them for removal or extraction.</p>
+                            </div>
+
+                            <hr class="border-slate-100">
+                            
                             <!-- Remove Mode -->
                             <div>
                                 <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
                                     <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i> Remove Mode
                                 </h4>
-                                <p class="text-xs text-slate-500 mb-3">Click pages to mark for deletion.</p>
+                                <p class="text-xs text-slate-500 mb-3">Click pages or use range to mark for deletion.</p>
                                 <button onclick="deleteSelectedPages()" class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-medium transition-colors">
                                     Remove Selected & Save
                                 </button>
@@ -182,7 +198,7 @@
                                 <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
                                     <i data-lucide="scissors" class="w-4 h-4 text-brand-500"></i> Extract Mode
                                 </h4>
-                                <p class="text-xs text-slate-500 mb-3">Click pages to extract to new PDF.</p>
+                                <p class="text-xs text-slate-500 mb-3">Click pages or use range to mark for extraction.</p>
                                 <button onclick="extractSelectedPages()" class="w-full py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 rounded-lg font-medium transition-colors">
                                     Extract Selected & Save
                                 </button>
@@ -579,6 +595,68 @@
             } else {
                 canvas.classList.add('ring-4', 'ring-brand-500', 'opacity-75');
                 el.dataset.selected = 'true';
+            }
+        }
+
+        function applyPageRangeSelection() {
+            const input = document.getElementById('page-range-input').value.trim();
+            const grid = document.getElementById('page-grid');
+            const totalPages = grid.children.length;
+            
+            if (!input) {
+                showStatus('Please enter a page range.', 'error');
+                return;
+            }
+
+            // Parse Range
+            const pagesToSelect = new Set();
+            const parts = input.split(',');
+            
+            for (const part of parts) {
+                const p = part.trim();
+                if (p.includes('-')) {
+                    const [start, end] = p.split('-').map(n => parseInt(n));
+                    if (!isNaN(start) && !isNaN(end)) {
+                        const low = Math.min(start, end);
+                        const high = Math.max(start, end);
+                        for (let i = low; i <= high; i++) {
+                            if (i >= 1 && i <= totalPages) pagesToSelect.add(i);
+                        }
+                    }
+                } else {
+                    const num = parseInt(p);
+                    if (!isNaN(num) && num >= 1 && num <= totalPages) {
+                        pagesToSelect.add(num);
+                    }
+                }
+            }
+
+            // Apply Selection to Visual Grid
+            let count = 0;
+            Array.from(grid.children).forEach((div, idx) => {
+                const pageNum = idx + 1;
+                const canvas = div.querySelector('canvas');
+                
+                // Select only if in range, deselect otherwise (or keep additive? "Apply" usually implies "Set to this")
+                // Let's make it "Set to this" for clarity.
+                if (pagesToSelect.has(pageNum)) {
+                    if (div.dataset.selected !== 'true') {
+                        canvas.classList.add('ring-4', 'ring-brand-500', 'opacity-75');
+                        div.dataset.selected = 'true';
+                    }
+                    count++;
+                } else {
+                    if (div.dataset.selected === 'true') {
+                        canvas.classList.remove('ring-4', 'ring-brand-500', 'ring-red-500', 'opacity-75');
+                        div.dataset.selected = 'false';
+                    }
+                }
+            });
+
+            if (count > 0) {
+                showStatus(`${count} pages selected. Click Remove or Extract to proceed.`, 'success');
+            } else {
+                showStatus('No pages matched your range.', 'error');
             }
         }
 
