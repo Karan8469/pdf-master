@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Master Tool</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Libraries -->
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    
+    <script>
+        // PDF.js Worker Setup
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        // Tailwind Configuration
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            900: '#0c4a6e',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .drop-zone {
+            transition: all 0.2s ease;
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%23CBD5E1FF' stroke-width='3' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        }
+        .drop-zone.active {
+            background-color: #f0f9ff;
+            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%230EA5E9FF' stroke-width='3' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+            transform: scale(1.01);
+        }
+        .page-thumb {
+            transition: all 0.2s;
+        }
+        .page-thumb:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .page-thumb.selected {
+            ring-width: 4px;
+            --tw-ring-color: #0ea5e9; 
+            opacity: 0.7;
+        }
+        /* Hide scrollbar for clean look */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+
+    <!-- Navbar -->
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="file-stack" class="w-8 h-8 text-brand-600"></i>
+                    <span class="font-bold text-xl text-slate-800">PDF Master</span>
+                </div>
+                <!-- Navigation -->
+                <div class="hidden md:flex space-x-1">
+                    <button onclick="switchTab('merge')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="merge">Merge</button>
+                    <button onclick="switchTab('split')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="split">Split/Remove</button>
+                    <button onclick="switchTab('create')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="create">Create PDF</button>
+                    <button onclick="switchTab('convert')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="convert">Convert PDF</button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- ERROR / STATUS MSG -->
+        <div id="status-msg" class="hidden mb-4 p-4 rounded-md text-center font-medium transition-all duration-300"></div>
+
+        <!-- MERGE TOOL -->
+        <div id="tool-merge" class="tool-section hidden animate-fade-in">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Merge PDF Files</h2>
+                <p class="mt-2 text-slate-600">Combine multiple PDFs into one. Drag and drop to reorder.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Drop Zone & List -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div id="merge-drop-zone" class="drop-zone p-10 rounded-2xl text-center cursor-pointer bg-white group">
+                        <input type="file" id="merge-file-input" multiple accept="application/pdf" class="hidden">
+                        <i data-lucide="upload-cloud" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
+                        <p class="text-lg font-medium text-slate-700">Drop PDFs here or click to browse</p>
+                    </div>
+
+                    <div id="merge-list" class="space-y-2 min-h-[100px]">
+                        <!-- Files injected here -->
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24">
+                        <h3 class="font-semibold text-lg mb-4">Merge Options</h3>
+                        <p class="text-sm text-slate-500 mb-6">Arrange files in the desired order on the left, then click Merge.</p>
+                        <button onclick="mergePDFs()" id="btn-merge" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i data-lucide="merge"></i> Merge Files
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SPLIT / REMOVE TOOL -->
+        <div id="tool-split" class="tool-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Edit PDF Pages</h2>
+                <p class="mt-2 text-slate-600">Remove pages or split specific pages into a new file.</p>
+            </div>
+
+            <div id="split-upload-area" class="max-w-2xl mx-auto">
+                <div id="split-drop-zone" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-white group">
+                    <input type="file" id="split-file-input" accept="application/pdf" class="hidden">
+                    <i data-lucide="file-search" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
+                    <p class="text-lg font-medium text-slate-700">Drop a PDF here to load pages</p>
+                </div>
+            </div>
+
+            <div id="split-editor-area" class="hidden">
+                <div class="flex flex-col lg:flex-row gap-6">
+                    <!-- Page Grid -->
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-semibold text-slate-700">Select Pages</h3>
+                            <div class="text-sm text-slate-500" id="page-count-display"></div>
+                        </div>
+                        <div id="page-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                            <!-- Thumbnails -->
+                        </div>
+                    </div>
+
+                    <!-- Sidebar Controls -->
+                    <div class="w-full lg:w-80 flex-shrink-0">
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24 space-y-6">
+                            
+                            <!-- Remove Mode -->
+                            <div>
+                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
+                                    <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i> Remove Mode
+                                </h4>
+                                <p class="text-xs text-slate-500 mb-3">Click pages to mark for deletion.</p>
+                                <button onclick="deleteSelectedPages()" class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-medium transition-colors">
+                                    Remove Selected & Save
+                                </button>
+                            </div>
+
+                            <hr class="border-slate-100">
+
+                            <!-- Extract Mode -->
+                            <div>
+                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
+                                    <i data-lucide="scissors" class="w-4 h-4 text-brand-500"></i> Extract Mode
+                                </h4>
+                                <p class="text-xs text-slate-500 mb-3">Click pages to extract to new PDF.</p>
+                                <button onclick="extractSelectedPages()" class="w-full py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 rounded-lg font-medium transition-colors">
+                                    Extract Selected & Save
+                                </button>
+                            </div>
+
+                            <button onclick="resetSplitTool()" class="w-full text-sm text-slate-400 hover:text-slate-600 underline">Start Over</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CREATE PDF (From Img/Txt) TOOL -->
+        <div id="tool-create" class="tool-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Create PDF</h2>
+                <p class="mt-2 text-slate-600">Convert Images (JPG, PNG, GIF, BMP, WEBP) or Text (.txt) to PDF.</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-4">
+                    <div id="create-drop-zone" class="drop-zone p-10 rounded-2xl text-center cursor-pointer bg-white group">
+                        <!-- Accepting images and text -->
+                        <input type="file" id="create-file-input" multiple accept="image/*, .txt" class="hidden">
+                        <i data-lucide="file-plus" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
+                        <p class="text-lg font-medium text-slate-700">Drop Images or Text files here</p>
+                    </div>
+                    <div id="create-list" class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        <!-- Items list -->
+                    </div>
+                </div>
+
+                <div class="lg:col-span-1">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24">
+                        <h3 class="font-semibold text-lg mb-4">PDF Settings</h3>
+                        
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Page Orientation</label>
+                            <select id="create-orientation" class="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                <option value="p">Portrait (A4)</option>
+                                <option value="l">Landscape (A4)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-slate-700 mb-1">Margin</label>
+                            <select id="create-margin" class="w-full p-2 border border-slate-300 rounded-md text-sm">
+                                <option value="10">Small (10mm)</option>
+                                <option value="20">Standard (20mm)</option>
+                                <option value="0">None (Images only)</option>
+                            </select>
+                        </div>
+
+                        <button onclick="convertFilesToPDF()" id="btn-create-convert" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                            <i data-lucide="file-check"></i> Generate PDF
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONVERT PDF (To Img/Txt) TOOL -->
+        <div id="tool-convert" class="tool-section hidden">
+            <div class="text-center mb-8">
+                <h2 class="text-3xl font-bold text-slate-900">Convert PDF</h2>
+                <p class="mt-2 text-slate-600">Convert PDF pages to Images (JPG) or Extract Text (.txt).</p>
+            </div>
+
+            <div id="convert-upload-area" class="max-w-2xl mx-auto">
+                <div id="convert-drop-zone" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-white group">
+                    <input type="file" id="convert-file-input" accept="application/pdf" class="hidden">
+                    <i data-lucide="file-input" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
+                    <p class="text-lg font-medium text-slate-700">Drop PDF to convert</p>
+                </div>
+            </div>
+
+            <!-- Actions Area (Shown after upload) -->
+            <div id="convert-actions-area" class="hidden max-w-2xl mx-auto text-center space-y-8">
+                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                    <h3 class="font-bold text-xl text-slate-800 mb-2" id="convert-filename">filename.pdf</h3>
+                    <p class="text-slate-500 mb-6" id="convert-pagecount">Loading info...</p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <button onclick="convertPdfToImages()" class="flex-1 py-4 px-6 bg-brand-50 border border-brand-200 hover:bg-brand-100 rounded-xl text-brand-700 font-bold transition-all flex flex-col items-center gap-2">
+                            <i data-lucide="image" class="w-8 h-8"></i>
+                            <span>Convert to Images</span>
+                        </button>
+                        
+                        <button onclick="extractTextFromPDF()" class="flex-1 py-4 px-6 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 font-bold transition-all flex flex-col items-center gap-2">
+                            <i data-lucide="file-text" class="w-8 h-8"></i>
+                            <span>Extract Text (.txt)</span>
+                        </button>
+                    </div>
+                    
+                    <button onclick="resetConvertTool()" class="mt-6 text-sm text-slate-400 hover:text-slate-600 underline">Process another file</button>
+                </div>
+            </div>
+
+            <!-- Image Results Grid -->
+            <div id="convert-results-area" class="hidden space-y-6 mt-8">
+                <div class="flex justify-between items-center">
+                    <h3 class="font-bold text-xl">Generated Images</h3>
+                    <button onclick="resetConvertTool()" class="text-sm text-brand-600 font-medium hover:underline">Clear Results</button>
+                </div>
+                <div id="convert-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Results -->
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- PREVIEW MODAL -->
+    <div id="preview-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 bg-slate-900/75 transition-opacity backdrop-blur-sm"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-5xl h-[85vh] flex flex-col">
+                    
+                    <!-- Header -->
+                    <div class="bg-white px-4 py-3 sm:px-6 flex justify-between items-center border-b border-slate-200">
+                        <h3 class="text-lg font-semibold leading-6 text-slate-900" id="modal-title">File Preview</h3>
+                        <div class="flex gap-2">
+                            <a id="download-btn" href="#" download="document.pdf" class="inline-flex justify-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500">
+                                <i data-lucide="download" class="w-4 h-4 mr-2"></i> Download
+                            </a>
+                            <button onclick="closePreview()" type="button" class="inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Close</button>
+                        </div>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="flex-1 bg-slate-100 p-4 relative overflow-hidden">
+                        <iframe id="preview-frame" class="w-full h-full rounded border border-slate-300 bg-white"></iframe>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        // --- GLOBAL STATE ---
+        const state = {
+            mergeFiles: [], // { id, file, name }
+            createFiles: [], // { id, file, type: 'image'|'text', data: string, name: string }
+            currentPdfDoc: null, // For split/remove/convert
+            currentPdfBytes: null,
+            pdfName: ''
+        };
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            switchTab('merge');
+            
+            // Initialize Sortable for Merge
+            new Sortable(document.getElementById('merge-list'), {
+                animation: 150,
+                ghostClass: 'bg-blue-50',
+                handle: '.drag-handle'
+            });
+
+            // Initialize Sortable for Create PDF
+            new Sortable(document.getElementById('create-list'), {
+                animation: 150,
+                ghostClass: 'opacity-50'
+            });
+
+            setupDragAndDrop();
+        });
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.tool-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.nav-btn').forEach(el => {
+                el.classList.remove('text-brand-600', 'bg-brand-50');
+                el.classList.add('text-slate-600');
+            });
+            
+            document.getElementById(`tool-${tabId}`).classList.remove('hidden');
+            const btn = document.querySelector(`button[data-tab="${tabId}"]`);
+            if(btn) {
+                btn.classList.add('text-brand-600', 'bg-brand-50');
+                btn.classList.remove('text-slate-600');
+            }
+            
+            // Clean Status
+            hideStatus();
+        }
+
+        // --- DRAG AND DROP SETUP ---
+        function setupDragAndDrop() {
+            // MERGE
+            const mergeZone = document.getElementById('merge-drop-zone');
+            const mergeInput = document.getElementById('merge-file-input');
+            setupZone(mergeZone, mergeInput, handleMergeFiles);
+
+            // SPLIT
+            const splitZone = document.getElementById('split-drop-zone');
+            const splitInput = document.getElementById('split-file-input');
+            setupZone(splitZone, splitInput, handleSplitFile);
+
+            // CREATE PDF (img/txt)
+            const createZone = document.getElementById('create-drop-zone');
+            const createInput = document.getElementById('create-file-input');
+            setupZone(createZone, createInput, handleCreateFiles);
+
+            // CONVERT PDF
+            const convertZone = document.getElementById('convert-drop-zone');
+            const convertInput = document.getElementById('convert-file-input');
+            setupZone(convertZone, convertInput, handleConvertFile);
+        }
+
+        function setupZone(zone, input, handler) {
+            zone.addEventListener('click', () => input.click());
+            input.addEventListener('change', (e) => handler(e.target.files));
+            
+            zone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                zone.classList.add('active');
+            });
+            zone.addEventListener('dragleave', () => zone.classList.remove('active'));
+            zone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                zone.classList.remove('active');
+                handler(e.dataTransfer.files);
+            });
+        }
+
+        // --- MERGE LOGIC ---
+        async function handleMergeFiles(files) {
+            for (const file of files) {
+                if (file.type !== 'application/pdf') continue;
+                state.mergeFiles.push({
+                    id: Math.random().toString(36).substr(2, 9),
+                    file: file,
+                    name: file.name
+                });
+            }
+            renderMergeList();
+        }
+
+        function renderMergeList() {
+            const list = document.getElementById('merge-list');
+            list.innerHTML = '';
+            
+            state.mergeFiles.forEach((item, index) => {
+                const el = document.createElement('div');
+                el.className = 'flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm group';
+                el.innerHTML = `
+                    <div class="drag-handle cursor-move p-2 text-slate-400 hover:text-slate-600">
+                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex-1 min-w-0 px-2">
+                        <p class="text-sm font-medium text-slate-700 truncate">${item.name}</p>
+                        <p class="text-xs text-slate-400">${formatSize(item.file.size)}</p>
+                    </div>
+                    <div class="flex items-center gap-1">
+                        <button onclick="previewMergeFile('${item.id}')" class="p-2 text-slate-400 hover:text-brand-600 transition-colors" title="Preview Content">
+                            <i data-lucide="eye" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="removeMergeFile('${item.id}')" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Remove">
+                            <i data-lucide="trash-2" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                `;
+                list.appendChild(el);
+            });
+            lucide.createIcons();
+            
+            document.getElementById('btn-merge').disabled = state.mergeFiles.length < 2;
+        }
+
+        function previewMergeFile(id) {
+            const item = state.mergeFiles.find(f => f.id === id);
+            if (!item) return;
+            const url = URL.createObjectURL(item.file);
+            
+            const iframe = document.getElementById('preview-frame');
+            iframe.src = url;
+            
+            // Hide download button for preview-only mode
+            document.getElementById('download-btn').classList.add('hidden');
+            document.getElementById('modal-title').innerText = "Preview: " + item.name;
+            
+            document.getElementById('preview-modal').classList.remove('hidden');
+        }
+
+        function removeMergeFile(id) {
+            state.mergeFiles = state.mergeFiles.filter(f => f.id !== id);
+            renderMergeList();
+        }
+
+        async function mergePDFs() {
+            if (state.mergeFiles.length < 2) return;
+            showStatus('Merging files...', 'loading');
+
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.create();
+                
+                // Get IDs from DOM to respect sort order
+                const list = document.getElementById('merge-list');
+                const orderedFiles = [];
+                list.childNodes.forEach(node => {
+                    if(node.nodeType !== 1) return;
+                    const btn = node.querySelector('button[onclick^="removeMergeFile"]');
+                    const idStr = btn.getAttribute('onclick'); 
+                    const id = idStr.match(/'([^']+)'/)[1];
+                    const fileObj = state.mergeFiles.find(f => f.id === id);
+                    if(fileObj) orderedFiles.push(fileObj);
+                });
+
+                for (const item of orderedFiles) {
+                    const arrayBuffer = await item.file.arrayBuffer();
+                    const srcDoc = await PDFLib.PDFDocument.load(arrayBuffer);
+                    const copiedPages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
+                    copiedPages.forEach((page) => pdfDoc.addPage(page));
+                }
+
+                const pdfBytes = await pdfDoc.save();
+                downloadAndPreview(pdfBytes, 'merged_document.pdf');
+                showStatus('Merge Successful!', 'success');
+
+            } catch (error) {
+                console.error(error);
+                showStatus('Failed to merge PDFs. Ensure they are not password protected.', 'error');
+            }
+        }
+
+        // --- SPLIT / REMOVE LOGIC ---
+        async function handleSplitFile(files) {
+            if (files.length === 0 || files[0].type !== 'application/pdf') return;
+            const file = files[0];
+            state.pdfName = file.name;
+            
+            showStatus('Loading PDF pages...', 'loading');
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                state.currentPdfBytes = arrayBuffer;
+                
+                // Use PDF.js for rendering thumbnails
+                const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
+                const pdf = await loadingTask.promise;
+                state.currentPdfDoc = pdf; // PDFJS Doc
+                
+                const grid = document.getElementById('page-grid');
+                grid.innerHTML = '';
+                
+                document.getElementById('page-count-display').innerText = `${pdf.numPages} Pages`;
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 0.3 }); // Thumbnail scale
+                    
+                    const div = document.createElement('div');
+                    div.className = 'relative group cursor-pointer';
+                    div.onclick = () => togglePageSelection(div, i);
+                    div.dataset.pageIndex = i - 1; // 0-based for pdf-lib
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+                    canvas.className = 'page-thumb w-full h-auto rounded border border-slate-300 bg-white shadow-sm';
+                    
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+                    
+                    div.appendChild(canvas);
+                    
+                    const badge = document.createElement('div');
+                    badge.className = 'absolute bottom-2 right-2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-75';
+                    badge.innerText = i;
+                    div.appendChild(badge);
+
+                    grid.appendChild(div);
+                }
+
+                document.getElementById('split-upload-area').classList.add('hidden');
+                document.getElementById('split-editor-area').classList.remove('hidden');
+                hideStatus();
+
+            } catch (e) {
+                console.error(e);
+                showStatus('Error loading PDF: ' + e.message, 'error');
+            }
+        }
+
+        function togglePageSelection(el, pageNum) {
+            const canvas = el.querySelector('canvas');
+            if (canvas.classList.contains('ring-4')) {
+                canvas.classList.remove('ring-4', 'ring-brand-500', 'ring-red-500', 'opacity-75');
+                el.dataset.selected = 'false';
+            } else {
+                canvas.classList.add('ring-4', 'ring-brand-500', 'opacity-75');
+                el.dataset.selected = 'true';
+            }
+        }
+
+        async function deleteSelectedPages() {
+            const grid = document.getElementById('page-grid');
+            const selectedDivs = Array.from(grid.children).filter(div => div.dataset.selected === 'true');
+            
+            if (selectedDivs.length === 0) return showStatus('Select pages to remove first.', 'error');
+
+            const indicesToRemove = selectedDivs.map(div => parseInt(div.dataset.pageIndex)).sort((a, b) => b - a); 
+
+            try {
+                const pdfDoc = await PDFLib.PDFDocument.load(state.currentPdfBytes);
+                
+                indicesToRemove.forEach(idx => {
+                    pdfDoc.removePage(idx);
+                });
+
+                const pdfBytes = await pdfDoc.save();
+                downloadAndPreview(pdfBytes, 'edited_' + state.pdfName);
+                showStatus('Pages removed successfully.', 'success');
+            } catch (e) {
+                showStatus('Error removing pages: ' + e.message, 'error');
+            }
+        }
+
+        async function extractSelectedPages() {
+            const grid = document.getElementById('page-grid');
+            const selectedDivs = Array.from(grid.children).filter(div => div.dataset.selected === 'true');
+            
+            if (selectedDivs.length === 0) return showStatus('Select pages to extract first.', 'error');
+
+            const indicesToKeep = selectedDivs.map(div => parseInt(div.dataset.pageIndex)).sort((a, b) => a - b);
+
+            try {
+                const srcDoc = await PDFLib.PDFDocument.load(state.currentPdfBytes);
+                const newDoc = await PDFLib.PDFDocument.create();
+                
+                const copiedPages = await newDoc.copyPages(srcDoc, indicesToKeep);
+                copiedPages.forEach(page => newDoc.addPage(page));
+
+                const pdfBytes = await newDoc.save();
+                downloadAndPreview(pdfBytes, 'extracted_' + state.pdfName);
+                showStatus('Pages extracted successfully.', 'success');
+            } catch (e) {
+                showStatus('Error extracting pages: ' + e.message, 'error');
+            }
+        }
+
+        function resetSplitTool() {
+            document.getElementById('split-upload-area').classList.remove('hidden');
+            document.getElementById('split-editor-area').classList.add('hidden');
+            document.getElementById('split-file-input').value = '';
+            state.currentPdfBytes = null;
+        }
+
+        // --- CREATE PDF LOGIC (Image + Text) ---
+        async function handleCreateFiles(files) {
+            for (const file of files) {
+                const id = Math.random().toString(36).substr(2, 9);
+                
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        state.createFiles.push({
+                            id,
+                            type: 'image',
+                            file,
+                            name: file.name,
+                            data: e.target.result
+                        });
+                        renderCreateList();
+                    };
+                    reader.readAsDataURL(file);
+                } 
+                else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        state.createFiles.push({
+                            id,
+                            type: 'text',
+                            file,
+                            name: file.name,
+                            data: e.target.result
+                        });
+                        renderCreateList();
+                    };
+                    reader.readAsText(file);
+                }
+            }
+        }
+
+        function renderCreateList() {
+            const list = document.getElementById('create-list');
+            list.innerHTML = '';
+            
+            state.createFiles.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 group shadow-sm flex items-center justify-center';
+                
+                // Render content based on type
+                if (item.type === 'image') {
+                    div.innerHTML = `
+                        <img src="${item.data}" class="w-full h-full object-cover">
+                    `;
+                } else {
+                    div.innerHTML = `
+                        <div class="p-4 text-center">
+                            <i data-lucide="file-text" class="w-12 h-12 text-slate-400 mx-auto mb-2"></i>
+                            <p class="text-xs text-slate-600 line-clamp-6 text-left overflow-hidden bg-white p-2 rounded shadow-sm h-32 w-full">${item.data}</p>
+                        </div>
+                    `;
+                }
+
+                // Append overlays
+                div.innerHTML += `
+                    <button onclick="removeCreateFile('${item.id}')" class="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white z-10">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                    <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate px-2 z-10">
+                        ${item.name}
+                    </div>
+                `;
+                list.appendChild(div);
+            });
+            lucide.createIcons();
+        }
+
+        function removeCreateFile(id) {
+            state.createFiles = state.createFiles.filter(i => i.id !== id);
+            renderCreateList();
+        }
+
+        async function convertFilesToPDF() {
+            if (state.createFiles.length === 0) return;
+            showStatus('Generating PDF...', 'loading');
+
+            // Sort based on DOM to respect drag/drop
+            const list = document.getElementById('create-list');
+            const orderedFiles = [];
+            list.childNodes.forEach(node => {
+               // Matching by finding the remove button ID or just trust state array? 
+               // SortableJS rearranges DOM. Let's find by ID in remove button.
+               const btn = node.querySelector('button');
+               if(btn) {
+                   const idStr = btn.getAttribute('onclick');
+                   const id = idStr.match(/'([^']+)'/)[1];
+                   const fileObj = state.createFiles.find(f => f.id === id);
+                   if(fileObj) orderedFiles.push(fileObj);
+               }
+            });
+
+            const { jsPDF } = window.jspdf;
+            const orientation = document.getElementById('create-orientation').value;
+            const margin = parseInt(document.getElementById('create-margin').value);
+
+            const doc = new jsPDF({
+                orientation: orientation === 'l' ? 'landscape' : 'portrait',
+                unit: 'mm'
+            });
+
+            // Iterate
+            for (let i = 0; i < orderedFiles.length; i++) {
+                if (i > 0) doc.addPage();
+                
+                const item = orderedFiles[i];
+                const pageWidth = doc.internal.pageSize.getWidth();
+                const pageHeight = doc.internal.pageSize.getHeight();
+
+                if (item.type === 'image') {
+                    // Normalize Image (Convert GIF/BMP to PNG via Canvas if needed, handled by helper)
+                    const safeDataUrl = await normalizeImage(item.data);
+                    
+                    const imgProps = doc.getImageProperties(safeDataUrl);
+                    
+                    // Fit logic
+                    const contentW = pageWidth - (margin * 2);
+                    const contentH = pageHeight - (margin * 2);
+                    const ratio = Math.min(contentW / imgProps.width, contentH / imgProps.height);
+                    
+                    const finalW = imgProps.width * ratio;
+                    const finalH = imgProps.height * ratio;
+                    const x = (pageWidth - finalW) / 2;
+                    const y = (pageHeight - finalH) / 2;
+                    
+                    doc.addImage(safeDataUrl, 'PNG', x, y, finalW, finalH);
+                } 
+                else if (item.type === 'text') {
+                    doc.setFontSize(12);
+                    const textMargin = margin || 10; // Enforce minimum margin for text
+                    const maxWidth = pageWidth - (textMargin * 2);
+                    
+                    const lines = doc.splitTextToSize(item.data, maxWidth);
+                    let cursorY = textMargin + 5;
+                    const lineHeight = 7;
+
+                    lines.forEach((line, lineIndex) => {
+                        if (cursorY > pageHeight - textMargin) {
+                            doc.addPage();
+                            cursorY = textMargin + 5;
+                        }
+                        doc.text(line, textMargin, cursorY);
+                        cursorY += lineHeight;
+                    });
+                }
+            }
+
+            const pdfBytes = doc.output('arraybuffer');
+            downloadAndPreview(pdfBytes, 'document.pdf');
+            showStatus('PDF Created Successfully!', 'success');
+        }
+
+        // Helper to ensure all images (GIF, BMP, WEBP) are valid PNG data URLs for jsPDF
+        function normalizeImage(dataUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(canvas.toDataURL('image/png'));
+                };
+                img.src = dataUrl;
+            });
+        }
+
+        // --- CONVERT PDF (PDF -> Img/Txt) LOGIC ---
+        async function handleConvertFile(files) {
+            if (files.length === 0 || files[0].type !== 'application/pdf') return;
+            const file = files[0];
+            state.pdfName = file.name;
+
+            showStatus('Loading PDF info...', 'loading');
+
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                state.currentPdfBytes = arrayBuffer;
+                
+                const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
+                const pdf = await loadingTask.promise;
+                state.currentPdfDoc = pdf;
+
+                document.getElementById('convert-filename').innerText = file.name;
+                document.getElementById('convert-pagecount').innerText = `${pdf.numPages} Pages detected`;
+
+                document.getElementById('convert-upload-area').classList.add('hidden');
+                document.getElementById('convert-actions-area').classList.remove('hidden');
+                hideStatus();
+            } catch (e) {
+                showStatus('Error reading PDF: ' + e.message, 'error');
+            }
+        }
+
+        async function convertPdfToImages() {
+            showStatus('Converting pages to images...', 'loading');
+            const pdf = state.currentPdfDoc;
+            const grid = document.getElementById('convert-grid');
+            grid.innerHTML = '';
+            
+            try {
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.5 });
+
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.height = viewport.height;
+                    canvas.width = viewport.width;
+
+                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+
+                    const imgUrl = canvas.toDataURL('image/jpeg', 0.85);
+                    
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'bg-white p-2 rounded-lg border border-slate-200 shadow-sm';
+                    wrapper.innerHTML = `
+                        <div class="relative group">
+                            <img src="${imgUrl}" class="w-full h-auto rounded border border-slate-100">
+                            <a href="${imgUrl}" download="${state.pdfName}_page_${i}.jpg" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
+                                <div class="bg-white text-slate-900 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
+                                    <i data-lucide="download" class="w-4 h-4"></i> Save JPG
+                                </div>
+                            </a>
+                        </div>
+                        <p class="text-center text-sm font-medium text-slate-600 mt-2">Page ${i}</p>
+                    `;
+                    grid.appendChild(wrapper);
+                }
+                lucide.createIcons();
+                
+                document.getElementById('convert-actions-area').classList.add('hidden');
+                document.getElementById('convert-results-area').classList.remove('hidden');
+                showStatus('Conversion Complete!', 'success');
+            } catch (e) {
+                showStatus('Error converting: ' + e.message, 'error');
+            }
+        }
+
+        async function extractTextFromPDF() {
+            showStatus('Extracting text...', 'loading');
+            const pdf = state.currentPdfDoc;
+            let fullText = "";
+
+            try {
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
+                }
+
+                // Create blob and download
+                const blob = new Blob([fullText], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = state.pdfName.replace('.pdf', '') + '_extracted.txt';
+                a.click();
+                URL.revokeObjectURL(url);
+
+                showStatus('Text Extracted & Downloaded!', 'success');
+            } catch (e) {
+                showStatus('Error extracting text: ' + e.message, 'error');
+            }
+        }
+
+        function resetConvertTool() {
+            document.getElementById('convert-upload-area').classList.remove('hidden');
+            document.getElementById('convert-actions-area').classList.add('hidden');
+            document.getElementById('convert-results-area').classList.add('hidden');
+            document.getElementById('convert-file-input').value = '';
+            state.currentPdfDoc = null;
+        }
+
+        // --- UTILS ---
+        function formatSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showStatus(msg, type) {
+            const el = document.getElementById('status-msg');
+            el.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
+            el.innerText = msg;
+            
+            if (type === 'error') el.classList.add('bg-red-100', 'text-red-700');
+            else if (type === 'success') el.classList.add('bg-green-100', 'text-green-700');
+            else el.classList.add('bg-blue-100', 'text-blue-700');
+            
+            el.classList.remove('hidden');
+        }
+
+        function hideStatus() {
+            document.getElementById('status-msg').classList.add('hidden');
+        }
+
+        function downloadAndPreview(pdfBytes, filename) {
+            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            
+            // Setup Download Button
+            const dlBtn = document.getElementById('download-btn');
+            dlBtn.href = url;
+            dlBtn.download = filename;
+            dlBtn.classList.remove('hidden'); // Ensure visible
+            document.getElementById('modal-title').innerText = "File Generated Successfully";
+
+            // Setup Preview Iframe
+            const iframe = document.getElementById('preview-frame');
+            iframe.src = url;
+
+            // Show Modal
+            document.getElementById('preview-modal').classList.remove('hidden');
+        }
+
+        function closePreview() {
+            document.getElementById('preview-modal').classList.add('hidden');
+            const iframe = document.getElementById('preview-frame');
+            // Keeping src allows back/forward, but maybe clear for memory?
+        }
+    </script>
+</body>
+</html>
