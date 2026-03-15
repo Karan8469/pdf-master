@@ -3,1074 +3,1156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PDF Master Tool</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>PDF Master</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 
     <!-- Libraries -->
     <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-    
-    <script>
-        // PDF.js Worker Setup
-        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-        
-        // Tailwind Configuration
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f0f9ff',
-                            100: '#e0f2fe',
-                            500: '#0ea5e9',
-                            600: '#0284c7',
-                            900: '#0c4a6e',
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
     <style>
-        .drop-zone {
-            transition: all 0.2s ease;
-            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%23CBD5E1FF' stroke-width='3' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0f1117;
+            --surface:   #181c27;
+            --surface2:  #1f2536;
+            --border:    #2a2f42;
+            --border2:   #3a3f55;
+            --text:      #e8eaf2;
+            --text2:     #8b90a8;
+            --text3:     #5a5f78;
+            --accent:    #6366f1;
+            --accent-h:  #818cf8;
+            --accent-bg: rgba(99,102,241,0.12);
+            --red:       #f87171;
+            --red-bg:    rgba(248,113,113,0.1);
+            --green:     #4ade80;
+            --green-bg:  rgba(74,222,128,0.1);
+            --amber:     #fbbf24;
+            --radius:    10px;
+            --radius-lg: 16px;
+            --shadow:    0 4px 24px rgba(0,0,0,0.35);
+            --transition: 0.18s ease;
         }
-        .drop-zone.active {
-            background-color: #f0f9ff;
-            background-image: url("data:image/svg+xml,%3csvg width='100%25' height='100%25' xmlns='http://www.w3.org/2000/svg'%3e%3crect width='100%25' height='100%25' fill='none' rx='16' ry='16' stroke='%230EA5E9FF' stroke-width='3' stroke-dasharray='12%2c 12' stroke-dashoffset='0' stroke-linecap='square'/%3e%3c/svg%3e");
-            transform: scale(1.01);
+
+        html { font-size: 15px; }
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.5;
         }
-        .page-thumb {
-            transition: all 0.2s;
+
+        /* ── NAV ── */
+        nav {
+            position: sticky; top: 0; z-index: 100;
+            background: rgba(15,17,23,0.85);
+            backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+            padding: 0 clamp(1rem, 4vw, 2.5rem);
+            height: 58px;
+            display: flex; align-items: center; justify-content: space-between;
         }
-        .page-thumb:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        .nav-brand {
+            display: flex; align-items: center; gap: 9px;
+            font-weight: 700; font-size: 1.05rem; letter-spacing: -0.02em;
+            color: var(--text);
         }
-        .page-thumb.selected {
-            ring-width: 4px;
-            --tw-ring-color: #0ea5e9; 
-            opacity: 0.7;
+        .nav-brand svg { color: var(--accent); }
+        .nav-tabs { display: flex; gap: 2px; }
+        .nav-tab {
+            background: none; border: none; cursor: pointer;
+            padding: 6px 14px; border-radius: 7px;
+            font-family: inherit; font-size: 0.875rem; font-weight: 500;
+            color: var(--text2); transition: all var(--transition);
         }
-        /* Hide scrollbar for clean look */
-        .no-scrollbar::-webkit-scrollbar {
+        .nav-tab:hover { background: var(--surface2); color: var(--text); }
+        .nav-tab.active { background: var(--accent-bg); color: var(--accent-h); }
+
+        .nav-hamburger { display: none; background: none; border: none; cursor: pointer; color: var(--text2); padding: 4px; }
+
+        /* ── MOBILE MENU ── */
+        #mobile-menu {
+            display: none; position: absolute; top: 58px; left: 0; right: 0;
+            background: var(--surface); border-bottom: 1px solid var(--border);
+            padding: 8px 12px 12px; z-index: 99;
+        }
+        #mobile-menu.open { display: block; }
+        .mobile-tab {
+            display: block; width: 100%; text-align: left;
+            background: none; border: none; cursor: pointer;
+            padding: 10px 12px; border-radius: 7px;
+            font-family: inherit; font-size: 0.95rem; font-weight: 500;
+            color: var(--text2); transition: all var(--transition);
+        }
+        .mobile-tab:hover, .mobile-tab.active { background: var(--accent-bg); color: var(--accent-h); }
+
+        /* ── LAYOUT ── */
+        main { max-width: 1180px; margin: 0 auto; padding: 36px clamp(1rem, 4vw, 2.5rem); }
+
+        .tool-section { display: none; animation: fadeUp 0.22s ease; }
+        .tool-section.active { display: block; }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ── PAGE HEADER ── */
+        .tool-header { margin-bottom: 32px; }
+        .tool-header h2 { font-size: 1.75rem; font-weight: 700; letter-spacing: -0.03em; }
+        .tool-header p { color: var(--text2); margin-top: 5px; font-size: 0.925rem; }
+
+        /* ── STATUS BAR ── */
+        #status-bar {
             display: none;
+            align-items: center; gap: 10px;
+            padding: 11px 16px; border-radius: var(--radius);
+            font-size: 0.875rem; font-weight: 500;
+            margin-bottom: 24px;
+            border: 1px solid transparent;
         }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
+        #status-bar.show { display: flex; }
+        #status-bar.info  { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-h); }
+        #status-bar.success { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+        #status-bar.error   { background: var(--red-bg);   border-color: var(--red);   color: var(--red); }
+        #status-bar.loading { background: var(--accent-bg); border-color: var(--accent); color: var(--accent-h); }
+
+        /* ── DROP ZONE ── */
+        .drop-zone {
+            border: 2px dashed var(--border2);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            padding: 48px 24px;
+            text-align: center;
+            cursor: pointer;
+            transition: all var(--transition);
+            user-select: none;
+        }
+        .drop-zone:hover, .drop-zone.over {
+            border-color: var(--accent);
+            background: var(--accent-bg);
+        }
+        .drop-zone svg { display: block; margin: 0 auto 14px; color: var(--text3); transition: color var(--transition); }
+        .drop-zone:hover svg, .drop-zone.over svg { color: var(--accent-h); }
+        .drop-zone p { color: var(--text2); font-size: 0.95rem; font-weight: 500; }
+        .drop-zone small { color: var(--text3); font-size: 0.8rem; display: block; margin-top: 4px; }
+
+        /* ── CARDS ── */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+        .card-title { font-weight: 600; font-size: 0.95rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+        /* ── BUTTONS ── */
+        .btn {
+            display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+            padding: 9px 18px; border-radius: var(--radius);
+            border: none; cursor: pointer; font-family: inherit;
+            font-size: 0.875rem; font-weight: 600; transition: all var(--transition);
+            text-decoration: none; white-space: nowrap;
+        }
+        .btn:disabled { opacity: 0.38; cursor: not-allowed; }
+        .btn-primary { background: var(--accent); color: #fff; }
+        .btn-primary:not(:disabled):hover { background: var(--accent-h); }
+        .btn-outline { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+        .btn-outline:hover { border-color: var(--border2); background: var(--surface2); color: var(--text); }
+        .btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+        .btn-danger:not(:disabled):hover { background: rgba(248,113,113,0.2); }
+        .btn-ghost { background: transparent; color: var(--text3); border: none; }
+        .btn-ghost:hover { color: var(--text2); }
+        .btn-block { width: 100%; }
+        .btn-lg { padding: 12px 24px; font-size: 0.95rem; border-radius: 12px; }
+
+        /* ── GRID LAYOUT ── */
+        .two-col { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
+        @media (max-width: 860px) { .two-col { grid-template-columns: 1fr; } }
+
+        .sidebar { display: flex; flex-direction: column; gap: 14px; }
+        .sidebar .card { position: sticky; top: 74px; }
+
+        /* ── FILE LIST (Merge) ── */
+        #merge-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; min-height: 40px; }
+        .merge-item {
+            display: flex; align-items: center; gap: 10px;
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 10px 12px;
+            transition: border-color var(--transition);
+        }
+        .merge-item:hover { border-color: var(--border2); }
+        .drag-handle { cursor: grab; color: var(--text3); flex-shrink: 0; display: flex; padding: 2px; }
+        .drag-handle:active { cursor: grabbing; }
+        .merge-name { flex: 1; min-width: 0; }
+        .merge-name p { font-size: 0.875rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .merge-name span { font-size: 0.75rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+        .merge-actions { display: flex; gap: 2px; }
+        .icon-btn { background: none; border: none; cursor: pointer; color: var(--text3); padding: 6px; border-radius: 6px; transition: all var(--transition); display: flex; }
+        .icon-btn:hover { background: var(--surface2); color: var(--text); }
+        .icon-btn.danger:hover { color: var(--red); }
+
+        /* ── PAGE GRID (Split) ── */
+        #page-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 12px; margin-top: 4px;
+        }
+        .page-thumb-wrap {
+            position: relative; cursor: pointer; border-radius: 8px;
+            border: 2px solid var(--border);
+            overflow: hidden; transition: all var(--transition);
+            background: var(--surface2);
+        }
+        .page-thumb-wrap:hover { border-color: var(--border2); transform: translateY(-2px); }
+        .page-thumb-wrap.selected { border-color: var(--accent); }
+        .page-thumb-wrap.selected::after {
+            content: ''; position: absolute; inset: 0;
+            background: rgba(99,102,241,0.18);
+        }
+        .page-thumb-wrap canvas { display: block; width: 100%; height: auto; }
+        .page-badge {
+            position: absolute; bottom: 6px; right: 6px;
+            background: rgba(0,0,0,0.6); color: #fff;
+            font-size: 0.7rem; font-weight: 600; font-family: 'DM Mono', monospace;
+            padding: 2px 6px; border-radius: 4px; backdrop-filter: blur(4px);
+        }
+        .page-check {
+            position: absolute; top: 6px; left: 6px; z-index: 2;
+            width: 18px; height: 18px; border-radius: 50%;
+            background: var(--accent); display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity var(--transition);
+        }
+        .page-thumb-wrap.selected .page-check { opacity: 1; }
+
+        /* ── CREATE FILE GRID ── */
+        #create-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px; margin-top: 12px;
+        }
+        .create-item {
+            position: relative; aspect-ratio: 3/4;
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: 8px; overflow: hidden;
+            cursor: default;
+        }
+        .create-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .create-item .text-preview {
+            width: 100%; height: 100%; padding: 10px;
+            font-size: 0.65rem; color: var(--text3); overflow: hidden;
+            font-family: 'DM Mono', monospace; line-height: 1.4;
+        }
+        .create-item .item-label {
+            position: absolute; bottom: 0; left: 0; right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 100%);
+            color: #fff; font-size: 0.7rem; padding: 16px 6px 5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .create-item .remove-btn {
+            position: absolute; top: 5px; right: 5px;
+            background: rgba(0,0,0,0.6); border: none; cursor: pointer;
+            color: var(--red); width: 22px; height: 22px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity var(--transition);
+        }
+        .create-item:hover .remove-btn { opacity: 1; }
+
+        /* ── FORM ELEMENTS ── */
+        label.field-label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+        select, input[type="text"] {
+            width: 100%; background: var(--bg); border: 1px solid var(--border2);
+            color: var(--text); border-radius: 7px; padding: 8px 11px;
+            font-family: inherit; font-size: 0.875rem; outline: none;
+            transition: border-color var(--transition);
+        }
+        select:focus, input[type="text"]:focus { border-color: var(--accent); }
+        select option { background: var(--surface2); }
+
+        /* ── DIVIDER ── */
+        hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+        /* ── CONVERT ACTIONS ── */
+        .convert-action-card {
+            flex: 1; background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius-lg); padding: 20px 16px;
+            text-align: center; cursor: pointer;
+            transition: all var(--transition);
+        }
+        .convert-action-card:hover { border-color: var(--accent); background: var(--accent-bg); }
+        .convert-action-card svg { margin: 0 auto 10px; display: block; color: var(--text3); transition: color var(--transition); }
+        .convert-action-card:hover svg { color: var(--accent-h); }
+        .convert-action-card strong { display: block; font-size: 0.9rem; font-weight: 600; }
+        .convert-action-card small { color: var(--text3); font-size: 0.78rem; }
+
+        /* ── CONVERT IMAGE GRID ── */
+        #convert-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 16px; margin-top: 8px;
+        }
+        .convert-img-card {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); overflow: hidden;
+        }
+        .convert-img-card img { width: 100%; height: auto; display: block; }
+        .convert-img-card .img-footer {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 8px 10px;
+        }
+        .convert-img-card .img-footer span { font-size: 0.78rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+        .convert-img-card .img-footer a { font-size: 0.78rem; color: var(--accent-h); font-weight: 600; text-decoration: none; }
+        .convert-img-card .img-footer a:hover { text-decoration: underline; }
+
+        /* ── FILE INFO BAR ── */
+        .file-info-bar {
+            background: var(--surface2); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 12px 16px;
+            display: flex; align-items: center; gap: 12px;
+            margin-bottom: 20px;
+        }
+        .file-info-bar svg { color: var(--accent); flex-shrink: 0; }
+        .file-info-bar .info { flex: 1; min-width: 0; }
+        .file-info-bar strong { display: block; font-size: 0.875rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .file-info-bar small { font-size: 0.78rem; color: var(--text3); font-family: 'DM Mono', monospace; }
+
+        /* ── SPINNER ── */
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 16px; height: 16px; border-radius: 50%;
+            border: 2px solid rgba(99,102,241,0.3);
+            border-top-color: var(--accent);
+            animation: spin 0.7s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* ── MODAL ── */
+        #preview-modal {
+            display: none; position: fixed; inset: 0; z-index: 200;
+            align-items: center; justify-content: center; padding: 20px;
+        }
+        #preview-modal.open { display: flex; }
+        .modal-backdrop {
+            position: absolute; inset: 0;
+            background: rgba(5,6,10,0.82); backdrop-filter: blur(6px);
+        }
+        .modal-box {
+            position: relative; z-index: 1;
+            background: var(--surface); border: 1px solid var(--border2);
+            border-radius: var(--radius-lg); box-shadow: var(--shadow);
+            width: 100%; max-width: 900px; height: min(88vh, 700px);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        .modal-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 14px 18px; border-bottom: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+        .modal-header h3 { font-size: 0.95rem; font-weight: 600; }
+        .modal-header .modal-btns { display: flex; gap: 8px; }
+        .modal-body { flex: 1; background: var(--bg); padding: 12px; overflow: hidden; }
+        .modal-body iframe { width: 100%; height: 100%; border: none; border-radius: 6px; background: #fff; }
+
+        /* ── RANGE INPUT ── */
+        .range-row { display: flex; gap: 8px; }
+        .range-row input { flex: 1; }
+
+        /* ── MISC ── */
+        .text-link { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 0.8rem; font-family: inherit; text-decoration: underline; }
+        .text-link:hover { color: var(--text2); }
+        .empty-hint { color: var(--text3); font-size: 0.8rem; text-align: center; padding: 16px; }
+
+        .selection-bar {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .selection-bar h3 { font-size: 0.95rem; font-weight: 600; }
+        .selection-bar small { color: var(--text3); font-size: 0.8rem; font-family: 'DM Mono', monospace; }
+
+        @media (max-width: 620px) {
+            .nav-tabs { display: none; }
+            .nav-hamburger { display: flex; }
+            #page-grid { grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); }
         }
     </style>
 </head>
-<body class="bg-slate-50 text-slate-800 min-h-screen font-sans">
+<body>
 
-    <!-- Navbar -->
-    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16 items-center">
-                <div class="flex items-center gap-2">
-                    <i data-lucide="file-stack" class="w-8 h-8 text-brand-600"></i>
-                    <span class="font-bold text-xl text-slate-800">PDF Master</span>
-                </div>
-                
-                <!-- Desktop Navigation -->
-                <div class="hidden md:flex space-x-1">
-                    <button onclick="switchTab('merge')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="merge">Merge</button>
-                    <button onclick="switchTab('split')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="split">Split/Remove</button>
-                    <button onclick="switchTab('create')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="create">Create PDF</button>
-                    <button onclick="switchTab('convert')" class="nav-btn px-3 py-2 rounded-md text-sm font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50 transition-colors" data-tab="convert">Convert PDF</button>
-                </div>
+<!-- NAV -->
+<nav>
+    <div class="nav-brand">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>
+            <line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="9" y1="9" x2="12" y2="9"/>
+        </svg>
+        PDF Master
+    </div>
+    <div class="nav-tabs">
+        <button class="nav-tab" data-tab="merge" onclick="switchTab('merge')">Merge</button>
+        <button class="nav-tab" data-tab="split" onclick="switchTab('split')">Split / Remove</button>
+        <button class="nav-tab" data-tab="create" onclick="switchTab('create')">Create PDF</button>
+        <button class="nav-tab" data-tab="convert" onclick="switchTab('convert')">Convert PDF</button>
+    </div>
+    <button class="nav-hamburger" onclick="toggleMenu()" aria-label="Menu">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+</nav>
+<div id="mobile-menu">
+    <button class="mobile-tab" data-tab="merge" onclick="switchTab('merge')">Merge</button>
+    <button class="mobile-tab" data-tab="split" onclick="switchTab('split')">Split / Remove</button>
+    <button class="mobile-tab" data-tab="create" onclick="switchTab('create')">Create PDF</button>
+    <button class="mobile-tab" data-tab="convert" onclick="switchTab('convert')">Convert PDF</button>
+</div>
 
-                <!-- Mobile Menu Button -->
-                <div class="flex md:hidden">
-                    <button onclick="toggleMobileMenu()" class="text-slate-600 hover:text-brand-600 p-2 focus:outline-none">
-                        <i data-lucide="menu" class="w-6 h-6"></i>
+<main>
+    <!-- STATUS -->
+    <div id="status-bar" role="alert">
+        <div class="spinner" id="status-spinner" style="display:none"></div>
+        <span id="status-text"></span>
+    </div>
+
+    <!-- ══ MERGE ══ -->
+    <div id="tool-merge" class="tool-section">
+        <div class="tool-header">
+            <h2>Merge PDFs</h2>
+            <p>Combine multiple PDF files into one. Drag to reorder before merging.</p>
+        </div>
+        <div class="two-col">
+            <div>
+                <div class="drop-zone" id="merge-drop-zone">
+                    <input type="file" id="merge-file-input" multiple accept="application/pdf" style="display:none">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <p>Drop PDF files here, or click to browse</p>
+                    <small>Multiple files supported</small>
+                </div>
+                <div id="merge-list"></div>
+            </div>
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-title">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        Merge Options
+                    </div>
+                    <p style="font-size:0.8rem;color:var(--text3);margin-bottom:16px;">Arrange your files in the desired order, then merge them into a single PDF.</p>
+                    <button class="btn btn-primary btn-block btn-lg" id="btn-merge" onclick="mergePDFs()" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H2v6M16 3h6v6M2 21v-6h6M22 21v-6h-6M2 9s4 0 10 3 10 3 10 3"/></svg>
+                        Merge Files
                     </button>
+                    <button class="btn btn-ghost btn-block" style="margin-top:8px;font-size:0.8rem;" onclick="clearMerge()">Clear all</button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Mobile Menu -->
-        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-slate-200 shadow-lg absolute w-full left-0 z-40">
-            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                 <button onclick="switchTab('merge')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="merge">Merge</button>
-                 <button onclick="switchTab('split')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="split">Split/Remove</button>
-                 <button onclick="switchTab('create')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="create">Create PDF</button>
-                 <button onclick="switchTab('convert')" class="nav-btn-mobile w-full text-left block px-3 py-2 rounded-md text-base font-medium text-slate-600 hover:text-brand-600 hover:bg-brand-50" data-tab="convert">Convert PDF</button>
-            </div>
+    <!-- ══ SPLIT / REMOVE ══ -->
+    <div id="tool-split" class="tool-section">
+        <div class="tool-header">
+            <h2>Split / Remove Pages</h2>
+            <p>Click pages to select, then remove or extract them as a new PDF.</p>
         </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        <!-- ERROR / STATUS MSG -->
-        <div id="status-msg" class="hidden mb-4 p-4 rounded-md text-center font-medium transition-all duration-300"></div>
-
-        <!-- MERGE TOOL -->
-        <div id="tool-merge" class="tool-section hidden animate-fade-in">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-slate-900">Merge PDF Files</h2>
-                <p class="mt-2 text-slate-600">Combine multiple PDFs into one. Drag and drop to reorder.</p>
-            </div>
-
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <!-- Drop Zone & List -->
-                <div class="lg:col-span-2 space-y-4">
-                    <div id="merge-drop-zone" class="drop-zone p-10 rounded-2xl text-center cursor-pointer bg-white group">
-                        <input type="file" id="merge-file-input" multiple accept="application/pdf" class="hidden">
-                        <i data-lucide="upload-cloud" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
-                        <p class="text-lg font-medium text-slate-700">Drop PDFs here or click to browse</p>
-                    </div>
-
-                    <div id="merge-list" class="space-y-2 min-h-[100px]">
-                        <!-- Files injected here -->
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="lg:col-span-1">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24">
-                        <h3 class="font-semibold text-lg mb-4">Merge Options</h3>
-                        <p class="text-sm text-slate-500 mb-6">Arrange files in the desired order on the left, then click Merge.</p>
-                        <button onclick="mergePDFs()" id="btn-merge" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i data-lucide="merge"></i> Merge Files
-                        </button>
-                    </div>
-                </div>
+        <div id="split-upload-area">
+            <div class="drop-zone" id="split-drop-zone" style="max-width:600px;margin:0 auto;">
+                <input type="file" id="split-file-input" accept="application/pdf" style="display:none">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                <p>Drop a PDF to load its pages</p>
+                <small>Single file only</small>
             </div>
         </div>
 
-        <!-- SPLIT / REMOVE TOOL -->
-        <div id="tool-split" class="tool-section hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-slate-900">Edit PDF Pages</h2>
-                <p class="mt-2 text-slate-600">Remove pages or split specific pages into a new file.</p>
-            </div>
-
-            <div id="split-upload-area" class="max-w-2xl mx-auto">
-                <div id="split-drop-zone" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-white group">
-                    <input type="file" id="split-file-input" accept="application/pdf" class="hidden">
-                    <i data-lucide="file-search" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
-                    <p class="text-lg font-medium text-slate-700">Drop a PDF here to load pages</p>
+        <div id="split-editor-area" style="display:none;">
+            <div id="split-file-info-bar" class="file-info-bar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <div class="info">
+                    <strong id="split-filename">file.pdf</strong>
+                    <small id="split-page-count">—</small>
                 </div>
+                <button class="text-link" onclick="resetSplitTool()">↩ Change file</button>
             </div>
 
-            <div id="split-editor-area" class="hidden">
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <!-- Page Grid -->
-                    <div class="flex-1">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="font-semibold text-slate-700">Select Pages</h3>
-                            <div class="text-sm text-slate-500" id="page-count-display"></div>
+            <div class="two-col">
+                <div>
+                    <div class="selection-bar">
+                        <h3>Pages</h3>
+                        <small id="selected-count">0 selected</small>
+                    </div>
+                    <div id="page-grid"></div>
+                </div>
+                <div class="sidebar">
+                    <div class="card">
+                        <div class="card-title">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                            Select by Range
                         </div>
-                        <div id="page-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                            <!-- Thumbnails -->
+                        <div class="range-row">
+                            <input type="text" id="page-range-input" placeholder="e.g. 1, 3-5, 8">
+                            <button class="btn btn-outline" onclick="applyPageRangeSelection()">Apply</button>
                         </div>
-                    </div>
+                        <p style="font-size:0.75rem;color:var(--text3);margin-top:7px;">Separate pages with commas, ranges with hyphens.</p>
 
-                    <!-- Sidebar Controls -->
-                    <div class="w-full lg:w-80 flex-shrink-0">
-                        <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24 space-y-6">
-                            
-                            <!-- Select Range -->
-                            <div>
-                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
-                                    <i data-lucide="list-checks" class="w-4 h-4 text-slate-600"></i> Select by Range
-                                </h4>
-                                <div class="flex gap-2">
-                                    <input type="text" id="page-range-input" placeholder="e.g. 1, 3-5, 8" class="w-full min-w-0 border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-brand-500 outline-none" onkeydown="if(event.key==='Enter') applyPageRangeSelection()">
-                                </div>
-                                <button onclick="applyPageRangeSelection()" class="mt-2 w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-sm font-medium border border-slate-300 transition-colors">
-                                    Apply Selection
-                                </button>
-                                <p class="text-xs text-slate-400 mt-2">Enter page numbers to select them for removal or extraction.</p>
-                            </div>
+                        <hr>
 
-                            <hr class="border-slate-100">
-                            
-                            <!-- Remove Mode -->
-                            <div>
-                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
-                                    <i data-lucide="trash-2" class="w-4 h-4 text-red-500"></i> Remove Mode
-                                </h4>
-                                <p class="text-xs text-slate-500 mb-3">Click pages or use range to mark for deletion.</p>
-                                <button onclick="deleteSelectedPages()" class="w-full py-2 bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 rounded-lg font-medium transition-colors">
-                                    Remove Selected & Save
-                                </button>
-                            </div>
-
-                            <hr class="border-slate-100">
-
-                            <!-- Extract Mode -->
-                            <div>
-                                <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-2">
-                                    <i data-lucide="scissors" class="w-4 h-4 text-brand-500"></i> Extract Mode
-                                </h4>
-                                <p class="text-xs text-slate-500 mb-3">Click pages or use range to mark for extraction.</p>
-                                <button onclick="extractSelectedPages()" class="w-full py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 border border-brand-200 rounded-lg font-medium transition-colors">
-                                    Extract Selected & Save
-                                </button>
-                            </div>
-
-                            <button onclick="resetSplitTool()" class="w-full text-sm text-slate-400 hover:text-slate-600 underline">Start Over</button>
+                        <div class="card-title" style="color:var(--red)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                            Remove Mode
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                        <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Delete selected pages from the document.</p>
+                        <button class="btn btn-danger btn-block" onclick="deleteSelectedPages()">Remove Selected & Save</button>
 
-        <!-- CREATE PDF (From Img/Txt) TOOL -->
-        <div id="tool-create" class="tool-section hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-slate-900">Create PDF</h2>
-                <p class="mt-2 text-slate-600">Convert Images (JPG, PNG, GIF, BMP, WEBP) or Text (.txt) to PDF.</p>
-            </div>
+                        <hr>
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div class="lg:col-span-2 space-y-4">
-                    <div id="create-drop-zone" class="drop-zone p-10 rounded-2xl text-center cursor-pointer bg-white group">
-                        <!-- Accepting images and text -->
-                        <input type="file" id="create-file-input" multiple accept="image/*, .txt" class="hidden">
-                        <i data-lucide="file-plus" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
-                        <p class="text-lg font-medium text-slate-700">Drop Images or Text files here</p>
-                    </div>
-                    <div id="create-list" class="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        <!-- Items list -->
-                    </div>
-                </div>
-
-                <div class="lg:col-span-1">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 sticky top-24">
-                        <h3 class="font-semibold text-lg mb-4">PDF Settings</h3>
-                        
-                        <div class="mb-4">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Page Orientation</label>
-                            <select id="create-orientation" class="w-full p-2 border border-slate-300 rounded-md text-sm">
-                                <option value="p">Portrait (A4)</option>
-                                <option value="l">Landscape (A4)</option>
-                            </select>
+                        <div class="card-title" style="color:var(--accent-h)">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+                            Extract Mode
                         </div>
-                        
-                        <div class="mb-6">
-                            <label class="block text-sm font-medium text-slate-700 mb-1">Margin</label>
-                            <select id="create-margin" class="w-full p-2 border border-slate-300 rounded-md text-sm">
-                                <option value="10">Small (10mm)</option>
-                                <option value="20">Standard (20mm)</option>
-                                <option value="0">None (Images only)</option>
-                            </select>
-                        </div>
+                        <p style="font-size:0.75rem;color:var(--text3);margin-bottom:10px;">Save only the selected pages as a new PDF.</p>
+                        <button class="btn btn-primary btn-block" onclick="extractSelectedPages()">Extract Selected & Save</button>
 
-                        <button onclick="convertFilesToPDF()" id="btn-create-convert" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white rounded-lg font-semibold shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                            <i data-lucide="file-check"></i> Generate PDF
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- CONVERT PDF (To Img/Txt) TOOL -->
-        <div id="tool-convert" class="tool-section hidden">
-            <div class="text-center mb-8">
-                <h2 class="text-3xl font-bold text-slate-900">Convert PDF</h2>
-                <p class="mt-2 text-slate-600">Convert PDF pages to Images (JPG) or Extract Text (.txt).</p>
-            </div>
-
-            <div id="convert-upload-area" class="max-w-2xl mx-auto">
-                <div id="convert-drop-zone" class="drop-zone p-12 rounded-2xl text-center cursor-pointer bg-white group">
-                    <input type="file" id="convert-file-input" accept="application/pdf" class="hidden">
-                    <i data-lucide="file-input" class="w-16 h-16 mx-auto text-slate-400 group-hover:text-brand-500 transition-colors mb-4"></i>
-                    <p class="text-lg font-medium text-slate-700">Drop PDF to convert</p>
-                </div>
-            </div>
-
-            <!-- Actions Area (Shown after upload) -->
-            <div id="convert-actions-area" class="hidden max-w-2xl mx-auto text-center space-y-8">
-                <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="font-bold text-xl text-slate-800 mb-2" id="convert-filename">filename.pdf</h3>
-                    <p class="text-slate-500 mb-6" id="convert-pagecount">Loading info...</p>
-                    
-                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button onclick="convertPdfToImages()" class="flex-1 py-4 px-6 bg-brand-50 border border-brand-200 hover:bg-brand-100 rounded-xl text-brand-700 font-bold transition-all flex flex-col items-center gap-2">
-                            <i data-lucide="image" class="w-8 h-8"></i>
-                            <span>Convert to Images</span>
-                        </button>
-                        
-                        <button onclick="extractTextFromPDF()" class="flex-1 py-4 px-6 bg-slate-50 border border-slate-200 hover:bg-slate-100 rounded-xl text-slate-700 font-bold transition-all flex flex-col items-center gap-2">
-                            <i data-lucide="file-text" class="w-8 h-8"></i>
-                            <span>Extract Text (.txt)</span>
-                        </button>
-                    </div>
-                    
-                    <button onclick="resetConvertTool()" class="mt-6 text-sm text-slate-400 hover:text-slate-600 underline">Process another file</button>
-                </div>
-            </div>
-
-            <!-- Image Results Grid -->
-            <div id="convert-results-area" class="hidden space-y-6 mt-8">
-                <div class="flex justify-between items-center">
-                    <h3 class="font-bold text-xl">Generated Images</h3>
-                    <button onclick="resetConvertTool()" class="text-sm text-brand-600 font-medium hover:underline">Clear Results</button>
-                </div>
-                <div id="convert-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    <!-- Results -->
-                </div>
-            </div>
-        </div>
-
-    </main>
-
-    <!-- PREVIEW MODAL -->
-    <div id="preview-modal" class="fixed inset-0 z-[100] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="fixed inset-0 bg-slate-900/75 transition-opacity backdrop-blur-sm"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-center justify-center p-4 text-center sm:p-0">
-                <div class="relative transform overflow-hidden rounded-lg bg-white text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-5xl h-[85vh] flex flex-col">
-                    
-                    <!-- Header -->
-                    <div class="bg-white px-4 py-3 sm:px-6 flex justify-between items-center border-b border-slate-200">
-                        <h3 class="text-lg font-semibold leading-6 text-slate-900" id="modal-title">File Preview</h3>
-                        <div class="flex gap-2">
-                            <a id="download-btn" href="#" download="document.pdf" class="inline-flex justify-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500">
-                                <i data-lucide="download" class="w-4 h-4 mr-2"></i> Download
-                            </a>
-                            <button onclick="closePreview()" type="button" class="inline-flex justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Close</button>
-                        </div>
-                    </div>
-                    
-                    <!-- Content -->
-                    <div class="flex-1 bg-slate-100 p-4 relative overflow-hidden">
-                        <iframe id="preview-frame" class="w-full h-full rounded border border-slate-300 bg-white"></iframe>
+                        <button class="btn btn-ghost btn-block" style="margin-top:10px;font-size:0.78rem;" onclick="selectAll()">Select All</button>
+                        <button class="btn btn-ghost btn-block" style="font-size:0.78rem;" onclick="clearSelection()">Deselect All</button>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- SCRIPT -->
-    <script>
-        // --- GLOBAL STATE ---
-        const state = {
-            mergeFiles: [], // { id, file, name }
-            createFiles: [], // { id, file, type: 'image'|'text', data: string, name: string }
-            currentPdfDoc: null, // For split/remove/convert
-            currentPdfBytes: null,
-            pdfName: ''
-        };
-
-        // --- INIT ---
-        document.addEventListener('DOMContentLoaded', () => {
-            lucide.createIcons();
-            switchTab('merge');
-            
-            // Initialize Sortable for Merge
-            new Sortable(document.getElementById('merge-list'), {
-                animation: 150,
-                ghostClass: 'bg-blue-50',
-                handle: '.drag-handle'
-            });
-
-            // Initialize Sortable for Create PDF
-            new Sortable(document.getElementById('create-list'), {
-                animation: 150,
-                ghostClass: 'opacity-50'
-            });
-
-            setupDragAndDrop();
-        });
-
-        // --- NAVIGATION ---
-        function toggleMobileMenu() {
-            const menu = document.getElementById('mobile-menu');
-            menu.classList.toggle('hidden');
-        }
-
-        function switchTab(tabId) {
-            document.querySelectorAll('.tool-section').forEach(el => el.classList.add('hidden'));
-            
-            // Update both desktop and mobile buttons
-            document.querySelectorAll('.nav-btn, .nav-btn-mobile').forEach(el => {
-                el.classList.remove('text-brand-600', 'bg-brand-50');
-                el.classList.add('text-slate-600');
-            });
-            
-            document.getElementById(`tool-${tabId}`).classList.remove('hidden');
-            
-            // Highlight active tab
-            document.querySelectorAll(`button[data-tab="${tabId}"]`).forEach(btn => {
-                btn.classList.add('text-brand-600', 'bg-brand-50');
-                btn.classList.remove('text-slate-600');
-            });
-            
-            // Close mobile menu if open
-            document.getElementById('mobile-menu').classList.add('hidden');
-            
-            // Clean Status
-            hideStatus();
-        }
-
-        // --- DRAG AND DROP SETUP ---
-        function setupDragAndDrop() {
-            // MERGE
-            const mergeZone = document.getElementById('merge-drop-zone');
-            const mergeInput = document.getElementById('merge-file-input');
-            setupZone(mergeZone, mergeInput, handleMergeFiles);
-
-            // SPLIT
-            const splitZone = document.getElementById('split-drop-zone');
-            const splitInput = document.getElementById('split-file-input');
-            setupZone(splitZone, splitInput, handleSplitFile);
-
-            // CREATE PDF (img/txt)
-            const createZone = document.getElementById('create-drop-zone');
-            const createInput = document.getElementById('create-file-input');
-            setupZone(createZone, createInput, handleCreateFiles);
-
-            // CONVERT PDF
-            const convertZone = document.getElementById('convert-drop-zone');
-            const convertInput = document.getElementById('convert-file-input');
-            setupZone(convertZone, convertInput, handleConvertFile);
-        }
-
-        function setupZone(zone, input, handler) {
-            zone.addEventListener('click', () => input.click());
-            input.addEventListener('change', (e) => handler(e.target.files));
-            
-            zone.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                zone.classList.add('active');
-            });
-            zone.addEventListener('dragleave', () => zone.classList.remove('active'));
-            zone.addEventListener('drop', (e) => {
-                e.preventDefault();
-                zone.classList.remove('active');
-                handler(e.dataTransfer.files);
-            });
-        }
-
-        // --- MERGE LOGIC ---
-        async function handleMergeFiles(files) {
-            for (const file of files) {
-                if (file.type !== 'application/pdf') continue;
-                state.mergeFiles.push({
-                    id: Math.random().toString(36).substr(2, 9),
-                    file: file,
-                    name: file.name
-                });
-            }
-            renderMergeList();
-        }
-
-        function renderMergeList() {
-            const list = document.getElementById('merge-list');
-            list.innerHTML = '';
-            
-            state.mergeFiles.forEach((item, index) => {
-                const el = document.createElement('div');
-                el.className = 'flex items-center bg-white p-3 rounded-lg border border-slate-200 shadow-sm group';
-                el.innerHTML = `
-                    <div class="drag-handle cursor-move p-2 text-slate-400 hover:text-slate-600">
-                        <i data-lucide="grip-vertical" class="w-5 h-5"></i>
+    <!-- ══ CREATE PDF ══ -->
+    <div id="tool-create" class="tool-section">
+        <div class="tool-header">
+            <h2>Create PDF</h2>
+            <p>Convert images (JPG, PNG, GIF, BMP, WEBP) or text files into a PDF document.</p>
+        </div>
+        <div class="two-col">
+            <div>
+                <div class="drop-zone" id="create-drop-zone">
+                    <input type="file" id="create-file-input" multiple accept="image/*, .txt" style="display:none">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <p>Drop images or .txt files here</p>
+                    <small>Drag to reorder after adding</small>
+                </div>
+                <div id="create-list"></div>
+            </div>
+            <div class="sidebar">
+                <div class="card">
+                    <div class="card-title">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/></svg>
+                        PDF Settings
                     </div>
-                    <div class="flex-1 min-w-0 px-2">
-                        <p class="text-sm font-medium text-slate-700 truncate">${item.name}</p>
-                        <p class="text-xs text-slate-400">${formatSize(item.file.size)}</p>
-                    </div>
-                    <div class="flex items-center gap-1">
-                        <button onclick="previewMergeFile('${item.id}')" class="p-2 text-slate-400 hover:text-brand-600 transition-colors" title="Preview Content">
-                            <i data-lucide="eye" class="w-5 h-5"></i>
-                        </button>
-                        <button onclick="removeMergeFile('${item.id}')" class="p-2 text-slate-400 hover:text-red-500 transition-colors" title="Remove">
-                            <i data-lucide="trash-2" class="w-5 h-5"></i>
-                        </button>
-                    </div>
-                `;
-                list.appendChild(el);
-            });
-            lucide.createIcons();
-            
-            document.getElementById('btn-merge').disabled = state.mergeFiles.length < 2;
-        }
+                    <label class="field-label">Page Orientation</label>
+                    <select id="create-orientation" style="margin-bottom:12px;">
+                        <option value="p">Portrait (A4)</option>
+                        <option value="l">Landscape (A4)</option>
+                    </select>
 
-        function previewMergeFile(id) {
-            const item = state.mergeFiles.find(f => f.id === id);
-            if (!item) return;
-            const url = URL.createObjectURL(item.file);
-            
-            const iframe = document.getElementById('preview-frame');
-            iframe.src = url;
-            
-            // Hide download button for preview-only mode
-            document.getElementById('download-btn').classList.add('hidden');
-            document.getElementById('modal-title').innerText = "Preview: " + item.name;
-            
-            document.getElementById('preview-modal').classList.remove('hidden');
-        }
+                    <label class="field-label">Margin</label>
+                    <select id="create-margin" style="margin-bottom:16px;">
+                        <option value="10">Small — 10 mm</option>
+                        <option value="20">Standard — 20 mm</option>
+                        <option value="0">None (images fill page)</option>
+                    </select>
 
-        function removeMergeFile(id) {
-            state.mergeFiles = state.mergeFiles.filter(f => f.id !== id);
-            renderMergeList();
-        }
-
-        async function mergePDFs() {
-            if (state.mergeFiles.length < 2) return;
-            showStatus('Merging files...', 'loading');
-
-            try {
-                const pdfDoc = await PDFLib.PDFDocument.create();
-                
-                // Get IDs from DOM to respect sort order
-                const list = document.getElementById('merge-list');
-                const orderedFiles = [];
-                list.childNodes.forEach(node => {
-                    if(node.nodeType !== 1) return;
-                    const btn = node.querySelector('button[onclick^="removeMergeFile"]');
-                    const idStr = btn.getAttribute('onclick'); 
-                    const id = idStr.match(/'([^']+)'/)[1];
-                    const fileObj = state.mergeFiles.find(f => f.id === id);
-                    if(fileObj) orderedFiles.push(fileObj);
-                });
-
-                for (const item of orderedFiles) {
-                    const arrayBuffer = await item.file.arrayBuffer();
-                    const srcDoc = await PDFLib.PDFDocument.load(arrayBuffer);
-                    const copiedPages = await pdfDoc.copyPages(srcDoc, srcDoc.getPageIndices());
-                    copiedPages.forEach((page) => pdfDoc.addPage(page));
-                }
-
-                const pdfBytes = await pdfDoc.save();
-                downloadAndPreview(pdfBytes, 'merged_document.pdf');
-                showStatus('Merge Successful!', 'success');
-
-            } catch (error) {
-                console.error(error);
-                showStatus('Failed to merge PDFs. Ensure they are not password protected.', 'error');
-            }
-        }
-
-        // --- SPLIT / REMOVE LOGIC ---
-        async function handleSplitFile(files) {
-            if (files.length === 0 || files[0].type !== 'application/pdf') return;
-            const file = files[0];
-            state.pdfName = file.name;
-            
-            showStatus('Loading PDF pages...', 'loading');
-            
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                state.currentPdfBytes = arrayBuffer;
-                
-                // Use PDF.js for rendering thumbnails
-                const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
-                const pdf = await loadingTask.promise;
-                state.currentPdfDoc = pdf; // PDFJS Doc
-                
-                const grid = document.getElementById('page-grid');
-                grid.innerHTML = '';
-                
-                document.getElementById('page-count-display').innerText = `${pdf.numPages} Pages`;
-
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 0.3 }); // Thumbnail scale
-                    
-                    const div = document.createElement('div');
-                    div.className = 'relative group cursor-pointer';
-                    div.onclick = () => togglePageSelection(div, i);
-                    div.dataset.pageIndex = i - 1; // 0-based for pdf-lib
-
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
-                    canvas.className = 'page-thumb w-full h-auto rounded border border-slate-300 bg-white shadow-sm';
-                    
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
-                    
-                    div.appendChild(canvas);
-                    
-                    const badge = document.createElement('div');
-                    badge.className = 'absolute bottom-2 right-2 bg-slate-800 text-white text-xs px-2 py-1 rounded opacity-75';
-                    badge.innerText = i;
-                    div.appendChild(badge);
-
-                    grid.appendChild(div);
-                }
-
-                document.getElementById('split-upload-area').classList.add('hidden');
-                document.getElementById('split-editor-area').classList.remove('hidden');
-                hideStatus();
-
-            } catch (e) {
-                console.error(e);
-                showStatus('Error loading PDF: ' + e.message, 'error');
-            }
-        }
-
-        function togglePageSelection(el, pageNum) {
-            const canvas = el.querySelector('canvas');
-            if (canvas.classList.contains('ring-4')) {
-                canvas.classList.remove('ring-4', 'ring-brand-500', 'ring-red-500', 'opacity-75');
-                el.dataset.selected = 'false';
-            } else {
-                canvas.classList.add('ring-4', 'ring-brand-500', 'opacity-75');
-                el.dataset.selected = 'true';
-            }
-        }
-
-        function applyPageRangeSelection() {
-            const input = document.getElementById('page-range-input').value.trim();
-            const grid = document.getElementById('page-grid');
-            const totalPages = grid.children.length;
-            
-            if (!input) {
-                showStatus('Please enter a page range.', 'error');
-                return;
-            }
-
-            // Parse Range
-            const pagesToSelect = new Set();
-            const parts = input.split(',');
-            
-            for (const part of parts) {
-                const p = part.trim();
-                if (p.includes('-')) {
-                    const [start, end] = p.split('-').map(n => parseInt(n));
-                    if (!isNaN(start) && !isNaN(end)) {
-                        const low = Math.min(start, end);
-                        const high = Math.max(start, end);
-                        for (let i = low; i <= high; i++) {
-                            if (i >= 1 && i <= totalPages) pagesToSelect.add(i);
-                        }
-                    }
-                } else {
-                    const num = parseInt(p);
-                    if (!isNaN(num) && num >= 1 && num <= totalPages) {
-                        pagesToSelect.add(num);
-                    }
-                }
-            }
-
-            // Apply Selection to Visual Grid
-            let count = 0;
-            Array.from(grid.children).forEach((div, idx) => {
-                const pageNum = idx + 1;
-                const canvas = div.querySelector('canvas');
-                
-                // Select only if in range, deselect otherwise (or keep additive? "Apply" usually implies "Set to this")
-                // Let's make it "Set to this" for clarity.
-                if (pagesToSelect.has(pageNum)) {
-                    if (div.dataset.selected !== 'true') {
-                        canvas.classList.add('ring-4', 'ring-brand-500', 'opacity-75');
-                        div.dataset.selected = 'true';
-                    }
-                    count++;
-                } else {
-                    if (div.dataset.selected === 'true') {
-                        canvas.classList.remove('ring-4', 'ring-brand-500', 'ring-red-500', 'opacity-75');
-                        div.dataset.selected = 'false';
-                    }
-                }
-            });
-
-            if (count > 0) {
-                showStatus(`${count} pages selected. Click Remove or Extract to proceed.`, 'success');
-            } else {
-                showStatus('No pages matched your range.', 'error');
-            }
-        }
-
-        async function deleteSelectedPages() {
-            const grid = document.getElementById('page-grid');
-            const selectedDivs = Array.from(grid.children).filter(div => div.dataset.selected === 'true');
-            
-            if (selectedDivs.length === 0) return showStatus('Select pages to remove first.', 'error');
-
-            const indicesToRemove = selectedDivs.map(div => parseInt(div.dataset.pageIndex)).sort((a, b) => b - a); 
-
-            try {
-                const pdfDoc = await PDFLib.PDFDocument.load(state.currentPdfBytes);
-                
-                indicesToRemove.forEach(idx => {
-                    pdfDoc.removePage(idx);
-                });
-
-                const pdfBytes = await pdfDoc.save();
-                downloadAndPreview(pdfBytes, 'edited_' + state.pdfName);
-                showStatus('Pages removed successfully.', 'success');
-            } catch (e) {
-                showStatus('Error removing pages: ' + e.message, 'error');
-            }
-        }
-
-        async function extractSelectedPages() {
-            const grid = document.getElementById('page-grid');
-            const selectedDivs = Array.from(grid.children).filter(div => div.dataset.selected === 'true');
-            
-            if (selectedDivs.length === 0) return showStatus('Select pages to extract first.', 'error');
-
-            const indicesToKeep = selectedDivs.map(div => parseInt(div.dataset.pageIndex)).sort((a, b) => a - b);
-
-            try {
-                const srcDoc = await PDFLib.PDFDocument.load(state.currentPdfBytes);
-                const newDoc = await PDFLib.PDFDocument.create();
-                
-                const copiedPages = await newDoc.copyPages(srcDoc, indicesToKeep);
-                copiedPages.forEach(page => newDoc.addPage(page));
-
-                const pdfBytes = await newDoc.save();
-                downloadAndPreview(pdfBytes, 'extracted_' + state.pdfName);
-                showStatus('Pages extracted successfully.', 'success');
-            } catch (e) {
-                showStatus('Error extracting pages: ' + e.message, 'error');
-            }
-        }
-
-        function resetSplitTool() {
-            document.getElementById('split-upload-area').classList.remove('hidden');
-            document.getElementById('split-editor-area').classList.add('hidden');
-            document.getElementById('split-file-input').value = '';
-            state.currentPdfBytes = null;
-        }
-
-        // --- CREATE PDF LOGIC (Image + Text) ---
-        async function handleCreateFiles(files) {
-            for (const file of files) {
-                const id = Math.random().toString(36).substr(2, 9);
-                
-                if (file.type.startsWith('image/')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        state.createFiles.push({
-                            id,
-                            type: 'image',
-                            file,
-                            name: file.name,
-                            data: e.target.result
-                        });
-                        renderCreateList();
-                    };
-                    reader.readAsDataURL(file);
-                } 
-                else if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        state.createFiles.push({
-                            id,
-                            type: 'text',
-                            file,
-                            name: file.name,
-                            data: e.target.result
-                        });
-                        renderCreateList();
-                    };
-                    reader.readAsText(file);
-                }
-            }
-        }
-
-        function renderCreateList() {
-            const list = document.getElementById('create-list');
-            list.innerHTML = '';
-            
-            state.createFiles.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'relative aspect-[3/4] bg-slate-100 rounded-lg overflow-hidden border border-slate-200 group shadow-sm flex items-center justify-center';
-                
-                // Render content based on type
-                if (item.type === 'image') {
-                    div.innerHTML = `
-                        <img src="${item.data}" class="w-full h-full object-cover">
-                    `;
-                } else {
-                    div.innerHTML = `
-                        <div class="p-4 text-center">
-                            <i data-lucide="file-text" class="w-12 h-12 text-slate-400 mx-auto mb-2"></i>
-                            <p class="text-xs text-slate-600 line-clamp-6 text-left overflow-hidden bg-white p-2 rounded shadow-sm h-32 w-full">${item.data}</p>
-                        </div>
-                    `;
-                }
-
-                // Append overlays
-                div.innerHTML += `
-                    <button onclick="removeCreateFile('${item.id}')" class="absolute top-2 right-2 bg-white/90 p-1.5 rounded-full text-red-500 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-white z-10">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    <button class="btn btn-primary btn-block btn-lg" onclick="convertFilesToPDF()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="12 18 15 15 12 12"/><line x1="8" y1="15" x2="15" y2="15"/></svg>
+                        Generate PDF
                     </button>
-                    <div class="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-xs p-1 truncate px-2 z-10">
-                        ${item.name}
-                    </div>
-                `;
-                list.appendChild(div);
-            });
-            lucide.createIcons();
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ══ CONVERT PDF ══ -->
+    <div id="tool-convert" class="tool-section">
+        <div class="tool-header">
+            <h2>Convert PDF</h2>
+            <p>Export PDF pages as JPEG images or extract all text as a .txt file.</p>
+        </div>
+
+        <div id="convert-upload-area" style="max-width:600px;margin:0 auto;">
+            <div class="drop-zone" id="convert-drop-zone">
+                <input type="file" id="convert-file-input" accept="application/pdf" style="display:none">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-5.55L1 10"/></svg>
+                <p>Drop a PDF to convert</p>
+                <small>Single file only</small>
+            </div>
+        </div>
+
+        <div id="convert-actions-area" style="display:none;">
+            <div id="convert-file-info-bar" class="file-info-bar" style="max-width:600px;margin:0 auto 20px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <div class="info">
+                    <strong id="convert-filename">file.pdf</strong>
+                    <small id="convert-pagecount">—</small>
+                </div>
+                <button class="text-link" onclick="resetConvertTool()">↩ Change file</button>
+            </div>
+            <div style="display:flex;gap:12px;max-width:500px;margin:0 auto;">
+                <div class="convert-action-card" onclick="convertPdfToImages()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    <strong>Export as Images</strong>
+                    <small>Each page → JPEG</small>
+                </div>
+                <div class="convert-action-card" onclick="extractTextFromPDF()">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+                    <strong>Extract Text</strong>
+                    <small>All pages → .txt</small>
+                </div>
+            </div>
+        </div>
+
+        <div id="convert-results-area" style="display:none;margin-top:28px;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+                <h3 style="font-size:1rem;font-weight:600;">Exported Images</h3>
+                <button class="btn btn-outline" onclick="resetConvertTool()">Convert another</button>
+            </div>
+            <div id="convert-grid"></div>
+        </div>
+    </div>
+</main>
+
+<!-- PREVIEW MODAL -->
+<div id="preview-modal" role="dialog" aria-modal="true">
+    <div class="modal-backdrop" onclick="closePreview()"></div>
+    <div class="modal-box">
+        <div class="modal-header">
+            <h3 id="modal-title">Preview</h3>
+            <div class="modal-btns">
+                <a id="download-btn" href="#" download class="btn btn-primary" style="display:none;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    Download
+                </a>
+                <button onclick="closePreview()" class="btn btn-outline">Close</button>
+            </div>
+        </div>
+        <div class="modal-body">
+            <iframe id="preview-frame" title="PDF Preview"></iframe>
+        </div>
+    </div>
+</div>
+
+<script>
+// ── STATE ──
+const state = {
+    mergeFiles: [],    // {id, file, name}
+    createFiles: [],   // {id, file, type, data, name}
+    currentPdfDoc: null,
+    currentPdfBytes: null,
+    pdfName: ''
+};
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', () => {
+    switchTab('merge');
+    new Sortable(document.getElementById('merge-list'), {
+        animation: 140, ghostClass: 'opacity-50', handle: '.drag-handle'
+    });
+    new Sortable(document.getElementById('create-list'), {
+        animation: 140, ghostClass: 'opacity-30'
+    });
+    setupAllZones();
+});
+
+// ── NAVIGATION ──
+function toggleMenu() {
+    document.getElementById('mobile-menu').classList.toggle('open');
+}
+
+function switchTab(id) {
+    document.querySelectorAll('.tool-section').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.nav-tab, .mobile-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.tab === id);
+    });
+    document.getElementById(`tool-${id}`).classList.add('active');
+    document.getElementById('mobile-menu').classList.remove('open');
+    hideStatus();
+}
+
+// ── DROP ZONES ──
+function setupAllZones() {
+    [
+        ['merge-drop-zone', 'merge-file-input', handleMergeFiles],
+        ['split-drop-zone', 'split-file-input', handleSplitFile],
+        ['create-drop-zone', 'create-file-input', handleCreateFiles],
+        ['convert-drop-zone', 'convert-file-input', handleConvertFile],
+    ].forEach(([zoneId, inputId, handler]) => {
+        const zone = document.getElementById(zoneId);
+        const input = document.getElementById(inputId);
+        if (!zone || !input) return;
+        zone.addEventListener('click', () => input.click());
+        input.addEventListener('change', e => { handler(e.target.files); e.target.value = ''; });
+        zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('over'); });
+        zone.addEventListener('dragleave', e => { if (!zone.contains(e.relatedTarget)) zone.classList.remove('over'); });
+        zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('over'); handler(e.dataTransfer.files); });
+    });
+}
+
+// ── STATUS ──
+function showStatus(msg, type = 'info') {
+    const bar = document.getElementById('status-bar');
+    const spinner = document.getElementById('status-spinner');
+    document.getElementById('status-text').textContent = msg;
+    bar.className = `show ${type}`;
+    spinner.style.display = type === 'loading' ? 'block' : 'none';
+    // Auto-hide success/error
+    if (type === 'success' || type === 'error') {
+        clearTimeout(bar._timer);
+        bar._timer = setTimeout(hideStatus, 4000);
+    }
+}
+function hideStatus() {
+    document.getElementById('status-bar').className = '';
+}
+
+// ── FORMAT ──
+function formatSize(bytes) {
+    if (!bytes) return '0 B';
+    const k = 1024, s = ['B','KB','MB','GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return `${(bytes / k**i).toFixed(1)} ${s[i]}`;
+}
+
+// ── SVG ICONS ──
+const ICONS = {
+    grip: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/></svg>`,
+    eye: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+    trash: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+    check: `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>`,
+};
+
+// ══════════════════════════
+//  MERGE
+// ══════════════════════════
+async function handleMergeFiles(files) {
+    for (const f of files) {
+        if (f.type !== 'application/pdf') { showStatus(`Skipped "${f.name}": not a PDF`, 'error'); continue; }
+        state.mergeFiles.push({ id: uid(), file: f, name: f.name });
+    }
+    renderMergeList();
+}
+
+function renderMergeList() {
+    const list = document.getElementById('merge-list');
+    list.innerHTML = '';
+    if (!state.mergeFiles.length) {
+        list.innerHTML = `<p class="empty-hint">No files added yet — drop some above.</p>`;
+    }
+    state.mergeFiles.forEach(item => {
+        const el = document.createElement('div');
+        el.className = 'merge-item';
+        el.innerHTML = `
+            <span class="drag-handle">${ICONS.grip}</span>
+            <div class="merge-name">
+                <p>${escHtml(item.name)}</p>
+                <span>${formatSize(item.file.size)}</span>
+            </div>
+            <div class="merge-actions">
+                <button class="icon-btn" onclick="previewFile('${item.id}')" title="Preview">${ICONS.eye}</button>
+                <button class="icon-btn danger" onclick="removeMergeFile('${item.id}')" title="Remove">${ICONS.trash}</button>
+            </div>
+        `;
+        list.appendChild(el);
+    });
+    document.getElementById('btn-merge').disabled = state.mergeFiles.length < 2;
+}
+
+function removeMergeFile(id) {
+    state.mergeFiles = state.mergeFiles.filter(f => f.id !== id);
+    renderMergeList();
+}
+
+function clearMerge() {
+    state.mergeFiles = [];
+    renderMergeList();
+}
+
+function previewFile(id) {
+    const item = state.mergeFiles.find(f => f.id === id);
+    if (!item) return;
+    const url = URL.createObjectURL(item.file);
+    openModal('Preview: ' + item.name, url, false);
+}
+
+async function mergePDFs() {
+    if (state.mergeFiles.length < 2) return;
+    showStatus('Merging files…', 'loading');
+    try {
+        const pdfDoc = await PDFLib.PDFDocument.create();
+        const ordered = getOrderedById('merge-list', 'removeMergeFile', state.mergeFiles);
+        for (const item of ordered) {
+            const ab = await item.file.arrayBuffer();
+            const src = await PDFLib.PDFDocument.load(ab, { ignoreEncryption: true });
+            const pages = await pdfDoc.copyPages(src, src.getPageIndices());
+            pages.forEach(p => pdfDoc.addPage(p));
+        }
+        const bytes = await pdfDoc.save();
+        downloadAndPreview(bytes, 'merged_document.pdf');
+        showStatus('Merge complete!', 'success');
+    } catch (e) {
+        showStatus('Merge failed. Files may be password-protected.', 'error');
+    }
+}
+
+// ══════════════════════════
+//  SPLIT / REMOVE
+// ══════════════════════════
+async function handleSplitFile(files) {
+    if (!files.length || files[0].type !== 'application/pdf') return;
+    const file = files[0];
+    state.pdfName = file.name;
+    showStatus('Loading pages…', 'loading');
+    try {
+        const ab = await file.arrayBuffer();
+        state.currentPdfBytes = ab;
+        const pdf = await pdfjsLib.getDocument(new Uint8Array(ab)).promise;
+        state.currentPdfDoc = pdf;
+
+        document.getElementById('split-filename').textContent = file.name;
+        document.getElementById('split-page-count').textContent = `${pdf.numPages} pages`;
+
+        const grid = document.getElementById('page-grid');
+        grid.innerHTML = '';
+
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const vp = page.getViewport({ scale: 0.32 });
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width; canvas.height = vp.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+            const wrap = document.createElement('div');
+            wrap.className = 'page-thumb-wrap';
+            wrap.dataset.pageIndex = i - 1;
+            wrap.dataset.selected = 'false';
+            wrap.onclick = () => togglePage(wrap);
+            wrap.innerHTML = `
+                <div class="page-check">${ICONS.check}</div>
+                <div class="page-badge">${i}</div>
+            `;
+            wrap.insertBefore(canvas, wrap.firstChild);
+            grid.appendChild(wrap);
         }
 
-        function removeCreateFile(id) {
-            state.createFiles = state.createFiles.filter(i => i.id !== id);
-            renderCreateList();
+        document.getElementById('split-upload-area').style.display = 'none';
+        document.getElementById('split-editor-area').style.display = 'block';
+        updateSelectionCount();
+        hideStatus();
+    } catch (e) {
+        showStatus('Error loading PDF: ' + e.message, 'error');
+    }
+}
+
+function togglePage(el) {
+    const sel = el.dataset.selected === 'true';
+    el.dataset.selected = sel ? 'false' : 'true';
+    el.classList.toggle('selected', !sel);
+    updateSelectionCount();
+}
+
+function updateSelectionCount() {
+    const n = document.querySelectorAll('.page-thumb-wrap.selected').length;
+    document.getElementById('selected-count').textContent = `${n} selected`;
+}
+
+function selectAll() {
+    document.querySelectorAll('.page-thumb-wrap').forEach(el => {
+        el.dataset.selected = 'true'; el.classList.add('selected');
+    });
+    updateSelectionCount();
+}
+
+function clearSelection() {
+    document.querySelectorAll('.page-thumb-wrap').forEach(el => {
+        el.dataset.selected = 'false'; el.classList.remove('selected');
+    });
+    updateSelectionCount();
+}
+
+function applyPageRangeSelection() {
+    const input = document.getElementById('page-range-input').value.trim();
+    if (!input) { showStatus('Enter a page range first.', 'error'); return; }
+    const total = document.querySelectorAll('.page-thumb-wrap').length;
+    const set = new Set();
+    for (const part of input.split(',')) {
+        const p = part.trim();
+        if (p.includes('-')) {
+            const [a, b] = p.split('-').map(Number);
+            for (let i = Math.min(a,b); i <= Math.max(a,b); i++) if (i >= 1 && i <= total) set.add(i);
+        } else {
+            const n = Number(p);
+            if (n >= 1 && n <= total) set.add(n);
         }
+    }
+    document.querySelectorAll('.page-thumb-wrap').forEach((el, idx) => {
+        const sel = set.has(idx + 1);
+        el.dataset.selected = sel ? 'true' : 'false';
+        el.classList.toggle('selected', sel);
+    });
+    updateSelectionCount();
+    if (set.size) showStatus(`${set.size} page(s) selected.`, 'success');
+    else showStatus('No pages matched your range.', 'error');
+}
 
-        async function convertFilesToPDF() {
-            if (state.createFiles.length === 0) return;
-            showStatus('Generating PDF...', 'loading');
+async function deleteSelectedPages() {
+    const selected = [...document.querySelectorAll('.page-thumb-wrap.selected')];
+    if (!selected.length) { showStatus('Select pages to remove first.', 'error'); return; }
+    const indices = selected.map(el => +el.dataset.pageIndex).sort((a,b) => b-a);
+    try {
+        const doc = await PDFLib.PDFDocument.load(state.currentPdfBytes);
+        indices.forEach(i => doc.removePage(i));
+        downloadAndPreview(await doc.save(), 'edited_' + state.pdfName);
+        showStatus('Pages removed.', 'success');
+    } catch (e) { showStatus('Error: ' + e.message, 'error'); }
+}
 
-            // Sort based on DOM to respect drag/drop
-            const list = document.getElementById('create-list');
-            const orderedFiles = [];
-            list.childNodes.forEach(node => {
-               // Matching by finding the remove button ID or just trust state array? 
-               // SortableJS rearranges DOM. Let's find by ID in remove button.
-               const btn = node.querySelector('button');
-               if(btn) {
-                   const idStr = btn.getAttribute('onclick');
-                   const id = idStr.match(/'([^']+)'/)[1];
-                   const fileObj = state.createFiles.find(f => f.id === id);
-                   if(fileObj) orderedFiles.push(fileObj);
-               }
-            });
+async function extractSelectedPages() {
+    const selected = [...document.querySelectorAll('.page-thumb-wrap.selected')];
+    if (!selected.length) { showStatus('Select pages to extract first.', 'error'); return; }
+    const indices = selected.map(el => +el.dataset.pageIndex).sort((a,b) => a-b);
+    try {
+        const src = await PDFLib.PDFDocument.load(state.currentPdfBytes);
+        const newDoc = await PDFLib.PDFDocument.create();
+        const pages = await newDoc.copyPages(src, indices);
+        pages.forEach(p => newDoc.addPage(p));
+        downloadAndPreview(await newDoc.save(), 'extracted_' + state.pdfName);
+        showStatus('Pages extracted.', 'success');
+    } catch (e) { showStatus('Error: ' + e.message, 'error'); }
+}
 
-            const { jsPDF } = window.jspdf;
-            const orientation = document.getElementById('create-orientation').value;
-            const margin = parseInt(document.getElementById('create-margin').value);
+function resetSplitTool() {
+    document.getElementById('split-upload-area').style.display = 'block';
+    document.getElementById('split-editor-area').style.display = 'none';
+    document.getElementById('split-file-input').value = '';
+    document.getElementById('page-grid').innerHTML = '';
+    state.currentPdfBytes = null; state.currentPdfDoc = null;
+}
 
-            const doc = new jsPDF({
-                orientation: orientation === 'l' ? 'landscape' : 'portrait',
-                unit: 'mm'
-            });
+// ══════════════════════════
+//  CREATE PDF
+// ══════════════════════════
+async function handleCreateFiles(files) {
+    const tasks = [...files].map(f => new Promise((res) => {
+        const id = uid();
+        if (f.type.startsWith('image/')) {
+            const r = new FileReader();
+            r.onload = e => { state.createFiles.push({ id, type: 'image', file: f, name: f.name, data: e.target.result }); res(); };
+            r.readAsDataURL(f);
+        } else if (f.type === 'text/plain' || f.name.endsWith('.txt')) {
+            const r = new FileReader();
+            r.onload = e => { state.createFiles.push({ id, type: 'text', file: f, name: f.name, data: e.target.result }); res(); };
+            r.readAsText(f);
+        } else { res(); }
+    }));
+    await Promise.all(tasks);
+    renderCreateList();
+}
 
-            // Iterate
-            for (let i = 0; i < orderedFiles.length; i++) {
-                if (i > 0) doc.addPage();
-                
-                const item = orderedFiles[i];
-                const pageWidth = doc.internal.pageSize.getWidth();
-                const pageHeight = doc.internal.pageSize.getHeight();
+function renderCreateList() {
+    const list = document.getElementById('create-list');
+    list.innerHTML = '';
+    state.createFiles.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'create-item';
+        div.dataset.id = item.id;
+        if (item.type === 'image') {
+            div.innerHTML = `<img src="${item.data}" alt="${escHtml(item.name)}">`;
+        } else {
+            div.innerHTML = `<div class="text-preview">${escHtml(item.data.slice(0, 300))}</div>`;
+        }
+        div.innerHTML += `
+            <div class="item-label">${escHtml(item.name)}</div>
+            <button class="remove-btn" onclick="removeCreateFile('${item.id}')" title="Remove">${ICONS.trash}</button>
+        `;
+        list.appendChild(div);
+    });
+}
 
-                if (item.type === 'image') {
-                    // Normalize Image (Convert GIF/BMP to PNG via Canvas if needed, handled by helper)
-                    const safeDataUrl = await normalizeImage(item.data);
-                    
-                    const imgProps = doc.getImageProperties(safeDataUrl);
-                    
-                    // Fit logic
-                    const contentW = pageWidth - (margin * 2);
-                    const contentH = pageHeight - (margin * 2);
-                    const ratio = Math.min(contentW / imgProps.width, contentH / imgProps.height);
-                    
-                    const finalW = imgProps.width * ratio;
-                    const finalH = imgProps.height * ratio;
-                    const x = (pageWidth - finalW) / 2;
-                    const y = (pageHeight - finalH) / 2;
-                    
-                    doc.addImage(safeDataUrl, 'PNG', x, y, finalW, finalH);
-                } 
-                else if (item.type === 'text') {
-                    doc.setFontSize(12);
-                    const textMargin = margin || 10; // Enforce minimum margin for text
-                    const maxWidth = pageWidth - (textMargin * 2);
-                    
-                    const lines = doc.splitTextToSize(item.data, maxWidth);
-                    let cursorY = textMargin + 5;
-                    const lineHeight = 7;
+function removeCreateFile(id) {
+    state.createFiles = state.createFiles.filter(i => i.id !== id);
+    renderCreateList();
+}
 
-                    lines.forEach((line, lineIndex) => {
-                        if (cursorY > pageHeight - textMargin) {
-                            doc.addPage();
-                            cursorY = textMargin + 5;
-                        }
-                        doc.text(line, textMargin, cursorY);
-                        cursorY += lineHeight;
-                    });
+async function convertFilesToPDF() {
+    if (!state.createFiles.length) { showStatus('Add files first.', 'error'); return; }
+    showStatus('Generating PDF…', 'loading');
+    try {
+        // Respect DOM order (Sortable may have reordered)
+        const domOrder = [...document.getElementById('create-list').children].map(el => el.dataset.id);
+        const ordered = domOrder.map(id => state.createFiles.find(f => f.id === id)).filter(Boolean);
+
+        const { jsPDF } = window.jspdf;
+        const orientation = document.getElementById('create-orientation').value;
+        const margin = parseInt(document.getElementById('create-margin').value);
+        const doc = new jsPDF({ orientation: orientation === 'l' ? 'landscape' : 'portrait', unit: 'mm' });
+
+        for (let i = 0; i < ordered.length; i++) {
+            if (i > 0) doc.addPage();
+            const item = ordered[i];
+            const W = doc.internal.pageSize.getWidth();
+            const H = doc.internal.pageSize.getHeight();
+
+            if (item.type === 'image') {
+                const url = await normalizeImage(item.data);
+                const props = doc.getImageProperties(url);
+                const cW = W - margin * 2, cH = H - margin * 2;
+                const ratio = Math.min(cW / props.width, cH / props.height);
+                const fW = props.width * ratio, fH = props.height * ratio;
+                doc.addImage(url, 'PNG', (W - fW) / 2, (H - fH) / 2, fW, fH);
+            } else {
+                const m = margin || 10;
+                doc.setFontSize(12);
+                const lines = doc.splitTextToSize(item.data, W - m * 2);
+                let y = m + 5;
+                for (const line of lines) {
+                    if (y > H - m) { doc.addPage(); y = m + 5; }
+                    doc.text(line, m, y); y += 7;
                 }
             }
-
-            const pdfBytes = doc.output('arraybuffer');
-            downloadAndPreview(pdfBytes, 'document.pdf');
-            showStatus('PDF Created Successfully!', 'success');
         }
+        downloadAndPreview(doc.output('arraybuffer'), 'document.pdf');
+        showStatus('PDF created!', 'success');
+    } catch (e) { showStatus('Error: ' + e.message, 'error'); }
+}
 
-        // Helper to ensure all images (GIF, BMP, WEBP) are valid PNG data URLs for jsPDF
-        function normalizeImage(dataUrl) {
-            return new Promise((resolve) => {
-                const img = new Image();
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    resolve(canvas.toDataURL('image/png'));
-                };
-                img.src = dataUrl;
-            });
+function normalizeImage(dataUrl) {
+    return new Promise(res => {
+        const img = new Image();
+        img.onload = () => {
+            const c = document.createElement('canvas');
+            c.width = img.width; c.height = img.height;
+            c.getContext('2d').drawImage(img, 0, 0);
+            res(c.toDataURL('image/png'));
+        };
+        img.src = dataUrl;
+    });
+}
+
+// ══════════════════════════
+//  CONVERT PDF
+// ══════════════════════════
+async function handleConvertFile(files) {
+    if (!files.length || files[0].type !== 'application/pdf') return;
+    const file = files[0];
+    state.pdfName = file.name;
+    showStatus('Reading PDF…', 'loading');
+    try {
+        const ab = await file.arrayBuffer();
+        state.currentPdfBytes = ab;
+        const pdf = await pdfjsLib.getDocument(new Uint8Array(ab)).promise;
+        state.currentPdfDoc = pdf;
+        document.getElementById('convert-filename').textContent = file.name;
+        document.getElementById('convert-pagecount').textContent = `${pdf.numPages} page${pdf.numPages > 1 ? 's' : ''}`;
+        document.getElementById('convert-upload-area').style.display = 'none';
+        document.getElementById('convert-actions-area').style.display = 'block';
+        hideStatus();
+    } catch (e) { showStatus('Error reading PDF: ' + e.message, 'error'); }
+}
+
+async function convertPdfToImages() {
+    showStatus('Converting pages to images…', 'loading');
+    const pdf = state.currentPdfDoc;
+    const grid = document.getElementById('convert-grid');
+    grid.innerHTML = '';
+    try {
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const vp = page.getViewport({ scale: 1.8 });
+            const canvas = document.createElement('canvas');
+            canvas.width = vp.width; canvas.height = vp.height;
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+            const imgUrl = canvas.toDataURL('image/jpeg', 0.88);
+            const baseName = state.pdfName.replace(/\.pdf$/i, '');
+            const card = document.createElement('div');
+            card.className = 'convert-img-card';
+            card.innerHTML = `
+                <img src="${imgUrl}" alt="Page ${i}">
+                <div class="img-footer">
+                    <span>Page ${i}</span>
+                    <a href="${imgUrl}" download="${baseName}_p${i}.jpg">↓ Save JPEG</a>
+                </div>
+            `;
+            grid.appendChild(card);
         }
+        document.getElementById('convert-actions-area').style.display = 'none';
+        document.getElementById('convert-results-area').style.display = 'block';
+        showStatus(`${pdf.numPages} images ready.`, 'success');
+    } catch (e) { showStatus('Error: ' + e.message, 'error'); }
+}
 
-        // --- CONVERT PDF (PDF -> Img/Txt) LOGIC ---
-        async function handleConvertFile(files) {
-            if (files.length === 0 || files[0].type !== 'application/pdf') return;
-            const file = files[0];
-            state.pdfName = file.name;
-
-            showStatus('Loading PDF info...', 'loading');
-
-            try {
-                const arrayBuffer = await file.arrayBuffer();
-                state.currentPdfBytes = arrayBuffer;
-                
-                const loadingTask = pdfjsLib.getDocument(new Uint8Array(arrayBuffer));
-                const pdf = await loadingTask.promise;
-                state.currentPdfDoc = pdf;
-
-                document.getElementById('convert-filename').innerText = file.name;
-                document.getElementById('convert-pagecount').innerText = `${pdf.numPages} Pages detected`;
-
-                document.getElementById('convert-upload-area').classList.add('hidden');
-                document.getElementById('convert-actions-area').classList.remove('hidden');
-                hideStatus();
-            } catch (e) {
-                showStatus('Error reading PDF: ' + e.message, 'error');
-            }
+async function extractTextFromPDF() {
+    showStatus('Extracting text…', 'loading');
+    const pdf = state.currentPdfDoc;
+    let text = '';
+    try {
+        for (let i = 1; i <= pdf.numPages; i++) {
+            const page = await pdf.getPage(i);
+            const content = await page.getTextContent();
+            text += `─── Page ${i} ───\n\n${content.items.map(t => t.str).join(' ')}\n\n`;
         }
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
+        a.download = state.pdfName.replace(/\.pdf$/i, '') + '_extracted.txt';
+        a.click();
+        showStatus('Text extracted and downloaded!', 'success');
+    } catch (e) { showStatus('Error: ' + e.message, 'error'); }
+}
 
-        async function convertPdfToImages() {
-            showStatus('Converting pages to images...', 'loading');
-            const pdf = state.currentPdfDoc;
-            const grid = document.getElementById('convert-grid');
-            grid.innerHTML = '';
-            
-            try {
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.5 });
+function resetConvertTool() {
+    document.getElementById('convert-upload-area').style.display = 'block';
+    document.getElementById('convert-actions-area').style.display = 'none';
+    document.getElementById('convert-results-area').style.display = 'none';
+    document.getElementById('convert-grid').innerHTML = '';
+    state.currentPdfDoc = null;
+}
 
-                    const canvas = document.createElement('canvas');
-                    const context = canvas.getContext('2d');
-                    canvas.height = viewport.height;
-                    canvas.width = viewport.width;
+// ── MODAL ──
+function openModal(title, url, showDownload = true) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('preview-frame').src = url;
+    const dl = document.getElementById('download-btn');
+    if (showDownload) {
+        dl.href = url; dl.download = title; dl.style.display = 'inline-flex';
+    } else {
+        dl.style.display = 'none';
+    }
+    document.getElementById('preview-modal').classList.add('open');
+}
 
-                    await page.render({ canvasContext: context, viewport: viewport }).promise;
+function closePreview() {
+    document.getElementById('preview-modal').classList.remove('open');
+    document.getElementById('preview-frame').src = '';
+}
 
-                    const imgUrl = canvas.toDataURL('image/jpeg', 0.85);
-                    
-                    const wrapper = document.createElement('div');
-                    wrapper.className = 'bg-white p-2 rounded-lg border border-slate-200 shadow-sm';
-                    wrapper.innerHTML = `
-                        <div class="relative group">
-                            <img src="${imgUrl}" class="w-full h-auto rounded border border-slate-100">
-                            <a href="${imgUrl}" download="${state.pdfName}_page_${i}.jpg" class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity rounded">
-                                <div class="bg-white text-slate-900 px-4 py-2 rounded-full font-semibold flex items-center gap-2">
-                                    <i data-lucide="download" class="w-4 h-4"></i> Save JPG
-                                </div>
-                            </a>
-                        </div>
-                        <p class="text-center text-sm font-medium text-slate-600 mt-2">Page ${i}</p>
-                    `;
-                    grid.appendChild(wrapper);
-                }
-                lucide.createIcons();
-                
-                document.getElementById('convert-actions-area').classList.add('hidden');
-                document.getElementById('convert-results-area').classList.remove('hidden');
-                showStatus('Conversion Complete!', 'success');
-            } catch (e) {
-                showStatus('Error converting: ' + e.message, 'error');
-            }
-        }
+function downloadAndPreview(bytes, filename) {
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    openModal(filename, url, true);
+}
 
-        async function extractTextFromPDF() {
-            showStatus('Extracting text...', 'loading');
-            const pdf = state.currentPdfDoc;
-            let fullText = "";
+// ── UTILS ──
+function uid() { return Math.random().toString(36).slice(2, 10); }
+function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-            try {
-                for (let i = 1; i <= pdf.numPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const textContent = await page.getTextContent();
-                    const pageText = textContent.items.map(item => item.str).join(' ');
-                    fullText += `--- Page ${i} ---\n\n${pageText}\n\n`;
-                }
+function getOrderedById(listId, removeFnName, arr) {
+    const list = document.getElementById(listId);
+    const result = [];
+    list.childNodes.forEach(node => {
+        if (node.nodeType !== 1) return;
+        const btn = node.querySelector(`[onclick^="${removeFnName}"]`);
+        if (!btn) return;
+        const m = btn.getAttribute('onclick').match(/'([^']+)'/);
+        if (m) { const item = arr.find(f => f.id === m[1]); if (item) result.push(item); }
+    });
+    return result;
+}
 
-                // Create blob and download
-                const blob = new Blob([fullText], { type: 'text/plain' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = state.pdfName.replace('.pdf', '') + '_extracted.txt';
-                a.click();
-                URL.revokeObjectURL(url);
-
-                showStatus('Text Extracted & Downloaded!', 'success');
-            } catch (e) {
-                showStatus('Error extracting text: ' + e.message, 'error');
-            }
-        }
-
-        function resetConvertTool() {
-            document.getElementById('convert-upload-area').classList.remove('hidden');
-            document.getElementById('convert-actions-area').classList.add('hidden');
-            document.getElementById('convert-results-area').classList.add('hidden');
-            document.getElementById('convert-file-input').value = '';
-            state.currentPdfDoc = null;
-        }
-
-        // --- UTILS ---
-        function formatSize(bytes) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-        }
-
-        function showStatus(msg, type) {
-            const el = document.getElementById('status-msg');
-            el.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700', 'bg-blue-100', 'text-blue-700');
-            el.innerText = msg;
-            
-            if (type === 'error') el.classList.add('bg-red-100', 'text-red-700');
-            else if (type === 'success') el.classList.add('bg-green-100', 'text-green-700');
-            else el.classList.add('bg-blue-100', 'text-blue-700');
-            
-            el.classList.remove('hidden');
-        }
-
-        function hideStatus() {
-            document.getElementById('status-msg').classList.add('hidden');
-        }
-
-        function downloadAndPreview(pdfBytes, filename) {
-            const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            
-            // Setup Download Button
-            const dlBtn = document.getElementById('download-btn');
-            dlBtn.href = url;
-            dlBtn.download = filename;
-            dlBtn.classList.remove('hidden'); // Ensure visible
-            document.getElementById('modal-title').innerText = "File Generated Successfully";
-
-            // Setup Preview Iframe
-            const iframe = document.getElementById('preview-frame');
-            iframe.src = url;
-
-            // Show Modal
-            document.getElementById('preview-modal').classList.remove('hidden');
-        }
-
-        function closePreview() {
-            document.getElementById('preview-modal').classList.add('hidden');
-            const iframe = document.getElementById('preview-frame');
-            // Keeping src allows back/forward, but maybe clear for memory?
-        }
-    </script>
+// Keyboard: close modal on Escape
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closePreview(); });
+</script>
 </body>
 </html>
